@@ -6,6 +6,7 @@
 #include <random>
 #include <string>
 #include <algorithm>
+#include <set>
 
 bool operator<(const CandidateSchema& a, const CandidateSchema& b) {
     return a.cnt * a.schema.length() * b.expansion > b.cnt * b.schema.length() * a.expansion;
@@ -64,6 +65,7 @@ void CandidateGen::ExtractCandidateFromBlock(const std::string& str) {
         for (int j = 0; i + j < vec.size(); ++j) {
             hash[j][i + j] = ((long long)hash[j][i + j - 1] * (long long)hash_factor[i + j] + hash_value[i + j]) % MOD;
         }
+    std::set<int> valid_hash_value;
     // We need to check whether each candidate contains more than one tuple
     for (int i = 1; i <= EXPAND_RANGE; ++i)
         for (int j = 0; i + j < vec.size() && j < i; ++j) {
@@ -85,6 +87,11 @@ void CandidateGen::ExtractCandidateFromBlock(const std::string& str) {
                 }
             // If valid, add it to the hash table
             if (valid) {
+                // This ensures that we are not overcounting candidates
+                if (valid_hash_value.count(hash[j][j + i]) == 0)
+                    valid_hash_value.insert(hash[j][j + i]);
+                else
+                    continue;
                 if (++hash_cnt_[hash[j][j + i]] == SAMPLE_POINTS / 10) {
                     Schema schema = "";
                     for (int k = vec[j] + 1; k <= vec[j + i]; ++k)

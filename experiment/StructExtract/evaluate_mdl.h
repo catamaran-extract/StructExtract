@@ -9,7 +9,7 @@
 class EvaluateMDL {
 private:
     const int SAMPLE_POINTS = 100;
-    const int SAMPLE_LENGTH = 2000;
+    const int SAMPLE_LENGTH = 5000;
 
     std::ifstream f_;
     int file_size_;

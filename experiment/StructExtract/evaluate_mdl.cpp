@@ -32,35 +32,39 @@ void EvaluateMDL::ParseBlock(const Schema& candidate) {
     //Logger::GetLogger() << "ParseBlock Begin\n";
     //Logger::GetLogger() << "Block Size: " << std::to_string(buffer_size_) << "\n";
     //Logger::GetLogger() << "Block: " << std::string(buffer_, buffer_size_) << "\n";
+
+    // We add prefix end-of-line to ensure that tuple always starts after end-of-line
+    Schema schema_ = '\n' + candidate;
     // KMP
-    std::vector<int> last(candidate.length());
+    std::vector<int> last(schema_.length());
     last[0] = -1;
-    for (int i = 1; i < candidate.length(); ++i) {
+    for (int i = 1; i < schema_.length(); ++i) {
         last[i] = last[i - 1];
-        while (candidate[i] != candidate[last[i] + 1] && last[i] != -1)
+        while (schema_[i] != schema_[last[i] + 1] && last[i] != -1)
             last[i] = last[last[i]];
-        if (candidate[i] == candidate[last[i] + 1])
+        if (schema_[i] == schema_[last[i] + 1])
             ++last[i];
     }
-    int current = -1, buffer_ptr = 0;
-    sampled_attributes = std::vector<std::vector<std::string>>(candidate.length());
-    std::vector<std::string> attr_buffer(candidate.length());
+    int current = 0, buffer_ptr = 0;
+    sampled_attributes = std::vector<std::vector<std::string>>(schema_.length() - 1);
+    std::vector<std::string> attr_buffer(schema_.length());
     for (int i = 0; i < buffer_size_; ++i) {
         if (is_special_char_[(unsigned char)buffer_[i]]) {
-            while (current != -1 && candidate[current + 1] != buffer_[i])
+            while (current != -1 && schema_[current + 1] != buffer_[i])
                 current = last[current];
-            if (candidate[current + 1] == buffer_[i])
+            if (schema_[current + 1] == buffer_[i])
                 ++current;
-            if (current == candidate.length() - 1) {
+            if (current == schema_.length() - 1) {
                 //Logger::GetLogger() << "Found Match in ParseBlock\n";
-                for (int i = 0; i < candidate.length(); ++i) {
-                    //Logger::GetLogger() << "<" << attr_buffer[(buffer_ptr + i + 1) % candidate.length()] << ">\n";
-                    sampled_attributes[i].push_back(attr_buffer[(buffer_ptr + i + 1) % candidate.length()]);
-                    attr_buffer[(buffer_ptr + i + 1) % candidate.length()] = "";
+                for (int i = 0; i < schema_.length() - 1; ++i) {
+                    //Logger::GetLogger() << "<" << attr_buffer[(buffer_ptr + i + 2) % schema_.length()] << ">\n";
+                    sampled_attributes[i].push_back(attr_buffer[(buffer_ptr + i + 2) % schema_.length()]);
+                    attr_buffer[(buffer_ptr + i + 2) % schema_.length()] = "";
                 }
+                current = 0;
             }
-            buffer_ptr = (buffer_ptr + 1) % candidate.length();
-            unaccounted_char_ += attr_buffer[buffer_ptr].length();
+            buffer_ptr = (buffer_ptr + 1) % schema_.length();
+            unaccounted_char_ += attr_buffer[buffer_ptr].length() + 1;
             attr_buffer[buffer_ptr] = "";
         }
         else {
@@ -234,7 +238,7 @@ double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
 
 double EvaluateMDL::EvaluateSchema(const Schema& candidate)
 {
-    Logger::GetLogger() << "Evaluating Candidate: " << candidate;
+    //Logger::GetLogger() << "Evaluating Candidate: " << candidate;
     std::default_random_engine gen;
     std::uniform_int_distribution<int> dist(0, file_size_);
 

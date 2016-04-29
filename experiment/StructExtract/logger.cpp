@@ -22,10 +22,12 @@ Logger::Logger() {
 
 Logger& operator<<(Logger& l, const char* str) {
     l.f_ << str;
+    l.f_.flush();
     return l;
 }
 
 Logger & operator<<(Logger & l, const std::string & str) {
     l.f_ << str;
+    l.f_.flush();
     return l;
 }
