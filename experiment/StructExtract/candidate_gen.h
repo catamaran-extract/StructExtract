@@ -36,7 +36,7 @@ private:
     void ExtractCandidateFromBlock(const std::string& str);
     void SampleBlock(int pos);
 public:
-    CandidateGen(const char* filename);
+    CandidateGen(const std::string& filename);
 
     void ComputeCandidate();
     int GetNumOfCandidate() const;

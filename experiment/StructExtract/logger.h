@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+std::string EscapeString(const std::string& str);
+
 class Logger {
 private:
     std::ofstream f_;

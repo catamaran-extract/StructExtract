@@ -18,7 +18,7 @@ private:
     int buffer_size_;
 
     bool is_special_char_[256];
-    std::vector<std::vector<std::string>> sampled_attributes;
+    std::vector<std::vector<std::string>> sampled_attributes_;
     int unaccounted_char_;
 
     void SampleBlock(int pos);
@@ -27,6 +27,6 @@ private:
     double ComputeCharMDL(const std::map<char, int>& map);
 
 public:
-    EvaluateMDL(const char* filename);
+    EvaluateMDL(const std::string& filename);
     double EvaluateSchema(const Schema& candidate);
 };

@@ -31,3 +31,12 @@ Logger & operator<<(Logger & l, const std::string & str) {
     l.f_.flush();
     return l;
 }
+
+std::string EscapeString(const std::string& str) {
+    std::string ret = "";
+    for (int i = 0; i < str.length(); ++i)
+        if (str[i] == '\n')
+            ret += "\\n";
+        else
+            ret += str[i];        
+}

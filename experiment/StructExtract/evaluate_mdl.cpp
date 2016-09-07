@@ -1,53 +1,41 @@
 #include "evaluate_mdl.h"
+#include "utility.h"
 #include "logger.h"
+
 #include <random>
 #include <map>
 #include <algorithm>
 
-EvaluateMDL::EvaluateMDL(const char* filename)
+EvaluateMDL::EvaluateMDL(const std::string& filename)
 {
     // In this function, we open the file and compute the file size
     f_.open(filename, std::ios::ate | std::ios::binary);
-    if (!f_.is_open()) {
+    if (!f_.is_open()) 
         Logger::GetLogger() << "Error: File Not Open!\n";
-    }
     file_size_ = f_.tellg();
 }
 
 void EvaluateMDL::SampleBlock(int pos) {
-    // In this function, we retrieve the EXPAND_RANGE end-of-line characters before and after
-    // the position.
-    //Logger::GetLogger() << "Sampling Position: " << std::to_string(pos) << "\n";
-
+    // In this function, we retrieve SAMPLE_LENGTH * 2 buffer to evaluate MDL
     buffer_ = new char[SAMPLE_LENGTH * 2];
     int start = (pos > SAMPLE_LENGTH ? pos - SAMPLE_LENGTH : 0);
     int end = (pos + SAMPLE_LENGTH > file_size_ ? file_size_ : pos + SAMPLE_LENGTH);
-    //Logger::GetLogger() << "Reading file from " << std::to_string(start) << " to " << std::to_string(end) << "\n";
+
     f_.seekg(start);
     f_.read(buffer_, end - start);
     buffer_size_ = end - start;
 }
 
 void EvaluateMDL::ParseBlock(const Schema& candidate) {
-    //Logger::GetLogger() << "ParseBlock Begin\n";
-    //Logger::GetLogger() << "Block Size: " << std::to_string(buffer_size_) << "\n";
-    //Logger::GetLogger() << "Block: " << std::string(buffer_, buffer_size_) << "\n";
+    const Schema& schema = candidate;
 
-    // We add prefix end-of-line to ensure that tuple always starts after end-of-line
-    Schema schema_ = '\n' + candidate;
-    // KMP
-    std::vector<int> last(schema_.length());
-    last[0] = -1;
-    for (int i = 1; i < schema_.length(); ++i) {
-        last[i] = last[i - 1];
-        while (schema_[i] != schema_[last[i] + 1] && last[i] != -1)
-            last[i] = last[last[i]];
-        if (schema_[i] == schema_[last[i] + 1])
-            ++last[i];
-    }
-    int current = 0, buffer_ptr = 0;
-    sampled_attributes = std::vector<std::vector<std::string>>(schema_.length() - 1);
-    std::vector<std::string> attr_buffer(schema_.length());
+    // KMP Prepraration
+    std::vector<int> last;
+    KMPPrepare(schema, &last);
+
+    int current = 0, attr_buffer_ptr = 0;
+    sampled_attributes_ = std::vector<std::vector<std::string>>(schema.length());
+    std::vector<std::string> attr_buffer(schema.length());
     for (int i = 0; i < buffer_size_; ++i) {
         if (is_special_char_[(unsigned char)buffer_[i]]) {
             while (current != -1 && schema_[current + 1] != buffer_[i])

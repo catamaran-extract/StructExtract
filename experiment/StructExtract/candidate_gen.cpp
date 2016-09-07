@@ -22,7 +22,7 @@ inline int CandidateGen::HashValue(int prefix_hash, const std::string& str) {
     return hash;
 }
 
-CandidateGen::CandidateGen(const char* filename) {
+CandidateGen::CandidateGen(const std::string& filename) {
     // In this function, we open the file and compute the file size
     Logger::GetLogger() << "Opening File:" << filename << "\n";
     f_.open(filename, std::ios::ate | std::ios::binary);
@@ -105,9 +105,7 @@ void CandidateGen::ExtractCandidateFromBlock(const std::string& str) {
 }
 
 void CandidateGen::SampleBlock(int pos) {
-    // In this function, we retrieve the EXPAND_RANGE end-of-line characters before and after
-    // the position.
-    //Logger::GetLogger() << "Sampling Position: " << std::to_string(pos) << "\n";
+    // In this function, we retrieve the EXPAND_RANGE end-of-line characters before and after the position.
 
     buffer_ = nullptr;
     for (int seek_len = 10; seek_len < file_size_; seek_len *= 2) {
