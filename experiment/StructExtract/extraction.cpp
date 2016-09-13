@@ -49,11 +49,7 @@ void Extraction::ExtractNextTuple()
             for (int i = buffer.size() - schema_.length(); i < buffer.size(); ++i)
                 output_.back().push_back(buffer[i]);
 
-            // Write unmatched parts to buffer
-            for (int i = 0; i < buffer.size() - schema_.length(); ++i) {
-                fbuffer_ << buffer[i] << delimiter[i];
-                fbuffer_size_ += buffer[i].length() + 1;
-            }
+
 
             return;
         }

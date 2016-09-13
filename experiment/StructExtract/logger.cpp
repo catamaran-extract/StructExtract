@@ -32,7 +32,7 @@ Logger & operator<<(Logger & l, const std::string & str) {
     return l;
 }
 
-std::string EscapeString(const std::string& str) {
+std::string ToString(const Schema& schema) {
     std::string ret = "";
     for (int i = 0; i < str.length(); ++i)
         if (str[i] == '\n')

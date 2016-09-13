@@ -1,5 +1,4 @@
 #include "evaluate_mdl.h"
-#include "utility.h"
 #include "logger.h"
 
 #include <random>

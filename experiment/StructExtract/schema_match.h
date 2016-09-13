@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include "base.h"
 
 struct ParsedTuple {
@@ -16,28 +17,30 @@ struct ParsedTuple {
 };
 
 struct MatchPoint {
+    const Schema* schema;
     int pos;
     int start_pos;
 
-    MatchPoint(int pos_, int start_pos_) : pos(pos_), start_pos(start_pos_) {}
+    MatchPoint(const Schema* schema_, int pos_, int start_pos_) : 
+        schema(schema_), pos(pos_), start_pos(start_pos_) {}
 };
 
 class SchemaMatch {
 private:
+    // buffer stores all matched non-special characters
     std::vector<std::string> buffer_;
     std::vector<char> delimiter_;
     bool is_special_char_[256];
-    Schema striped_schema_;
-
-    std::vector<int> next_;
-    std::vector<int> last_;
+    Schema schema_;
 
     std::vector<MatchPoint> pointer_;
+
+    void GenerateSpecialChar(const Schema* schema);
+    void ExtractBuffer(std::vector<ParsedTuple>* buffer, std::vector<ParsedTuple>* tmep, int len);
 public:
-    SchemaMatch(const std::string& schema);
-    bool IsValid();
+    SchemaMatch(const Schema& schema);
     void FeedChar(char c);
-    bool TupleAvailable();
+    bool TupleAvailable() const;
     // Unmatched parts will be written to buffer
     void GetTuple(ParsedTuple* tuple, std::string* buffer);
 };

@@ -2,8 +2,7 @@
 
 #include <iostream>
 #include <fstream>
-
-std::string EscapeString(const std::string& str);
+#include "base.h"
 
 class Logger {
 private:
@@ -18,3 +17,5 @@ public:
 
 Logger& operator<<(Logger& l, const char* str);
 Logger& operator<<(Logger& l, const std::string& str);
+
+std::string ToString(const Schema& schema);
