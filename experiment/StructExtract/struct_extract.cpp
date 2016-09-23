@@ -6,22 +6,23 @@
 #include "extraction.h"
 #include <algorithm>
 
-Schema SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl) {
+Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl) {
     double best_mdl = 1e10;
-    Schema best_schema;
+    std::unique_ptr<Schema> best_schema;
     for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 100); ++i) {
-        const Schema& schema(candidate_gen->GetCandidate(i));
-        double evaluated_mdl = evaluate_mdl->EvaluateSchema(schema);
-        Logger::GetLogger() << "Candidate #" << std::to_string(i) << ": " << EscapeString(schema) << "\n";
+        std::unique_ptr<Schema> schema(candidate_gen->GetCandidate(i));
+        double evaluated_mdl = evaluate_mdl->EvaluateSchema(schema.get());
+        Logger::GetLogger() << "Candidate #" << std::to_string(i) << ": " << ToString(schema.get()) << "\n";
         Logger::GetLogger() << "MDL: " << std::to_string(evaluated_mdl) << "\n";
 
         if (evaluated_mdl < best_mdl) {
             best_mdl = evaluated_mdl;
-            best_schema = schema;
+            best_schema = std::move(schema);
         }
     }
-    Logger::GetLogger() << "Best Schema: " << EscapeString(best_schema) << "\n";
+    Logger::GetLogger() << "Best Schema: " << ToString(best_schema.get()) << "\n";
     Logger::GetLogger() << "Best MDL: " << std::to_string(best_mdl) << "\n";
+    return best_schema.release();
 }
 
 int main(int argc, char** argv)
@@ -48,12 +49,12 @@ int main(int argc, char** argv)
         EvaluateMDL evaluate_mdl(input_file);
 
         // Select Best Schema
-        Schema schema = SelectSchema(&candidate_gen, &evaluate_mdl);
+        std::unique_ptr<Schema> schema(SelectSchema(&candidate_gen, &evaluate_mdl));
 
         // Extract
         std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".csv");
         std::string buffer_file = (buffer_prefix + "_" + std::to_string(iteration) + ".txt");
-        Extraction extract(input_file, output_file, buffer_file, schema);
+        Extraction extract(input_file, output_file, buffer_file, schema.get());
         if (file_size == -1)
             file_size = extract.GetSourceFileSize();
 

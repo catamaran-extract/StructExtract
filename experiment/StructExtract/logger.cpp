@@ -20,23 +20,19 @@ Logger::Logger() {
     f_ = std::ofstream(ss.str());
 }
 
-Logger& operator<<(Logger& l, const char* str) {
-    l.f_ << str;
-    l.f_.flush();
-    return l;
+inline std::string EscapeChar(char c) {
+    if (c == '\n') return "\\n";
+    else if (c == '\t') return "\\t";
+    else return std::to_string(c);
 }
 
-Logger & operator<<(Logger & l, const std::string & str) {
-    l.f_ << str;
-    l.f_.flush();
-    return l;
-}
-
-std::string ToString(const Schema& schema) {
+std::string ToString(const Schema* schema) {
     std::string ret = "";
-    for (int i = 0; i < str.length(); ++i)
-        if (str[i] == '\n')
-            ret += "\\n";
-        else
-            ret += str[i];        
+    if (schema->is_array)
+        ret += "[";
+    for (const auto& ptr : schema->child)
+        ret += ToString(ptr.get());
+    if (schema->is_array)
+        ret += EscapeChar(schema->return_char) + "[" + EscapeChar(schema->terminate_char);
+    return ret;
 }

@@ -11,11 +11,15 @@ private:
     Logger();
 public:
     static Logger& GetLogger();
-    friend Logger& operator<<(Logger& l, const char* str);
-    friend Logger& operator<<(Logger& l, const std::string& str);
+    template <typename T>
+    friend Logger& operator<<(Logger& l, const T& val);
 };
 
-Logger& operator<<(Logger& l, const char* str);
-Logger& operator<<(Logger& l, const std::string& str);
+template <typename T>
+Logger& operator<<(Logger& l, const T& val) {
+    l.f_ << val;
+    l.f_.flush();
+    return l;
+}
 
-std::string ToString(const Schema& schema);
+std::string ToString(const Schema* schema);
