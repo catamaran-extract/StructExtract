@@ -136,7 +136,6 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
         return EvaluateAttrMDL(attr_vec);
     }
     else {
-        // Otherwise it is a struct
         double mdl = 0;
         for (int i = 0; i < (int)schema->child.size(); ++i) {
             std::vector<const ParsedTuple*> child_tuples;
@@ -144,12 +143,14 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
                 child_tuples.push_back(tuple->attr[i].get());
             mdl += EvaluateTupleMDL(child_tuples, schema->child[i].get());
         }
+        // For arrays, we need to add the last attribute
         if (schema->is_array) {
             std::vector<std::string> attr_vec;
             for (const ParsedTuple* tuple : tuple_vec)
                 attr_vec.push_back(tuple->attr.back()->value);
             mdl += EvaluateAttrMDL(attr_vec);
         }
+        return mdl;
     }
 }
 

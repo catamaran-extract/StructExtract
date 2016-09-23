@@ -15,7 +15,7 @@ Schema* Schema::CreateArray(std::vector<std::unique_ptr<Schema>>* vec,
     schema->return_char = return_char;
     schema->terminate_char = terminate_char;
     schema->child.swap(*vec);
-    for (int i = 0; i < schema->child.size(); ++i) {
+    for (int i = 0; i < (int)schema->child.size(); ++i) {
         schema->child[i]->parent = schema;
         schema->child[i]->index = i;
     }
@@ -25,7 +25,7 @@ Schema* Schema::CreateArray(std::vector<std::unique_ptr<Schema>>* vec,
 Schema* Schema::CreateStruct(std::vector<std::unique_ptr<Schema>>* vec) {
     Schema* schema = new Schema();
     schema->child.swap(*vec);
-    for (int i = 0; i < schema->child.size(); ++i) {
+    for (int i = 0; i < (int)schema->child.size(); ++i) {
         schema->child[i]->parent = schema;
         schema->child[i]->index = i;
     }
@@ -48,7 +48,7 @@ bool CheckEqual(const Schema* schemaA, const Schema* schemaB) {
     if (schemaB->is_char)
         if (!schemaA->is_char) return false;
     if (schemaA->child.size() != schemaB->child.size()) return false;
-    for (int i = 0; i < schemaA->child.size(); ++i)
+    for (int i = 0; i < (int)schemaA->child.size(); ++i)
         if (!CheckEqual(schemaA->child[i].get(), schemaB->child[i].get()))
             return false;
     return true;
@@ -58,8 +58,8 @@ Schema* CopySchema(const Schema* schema) {
     if (schema->is_char)
         return Schema::CreateChar(schema->delimiter);
     std::vector<std::unique_ptr<Schema>> vec;
-    for (int i = 0; i < schema->child.size(); ++i) {
-        std::unique_ptr<Schema> ptr(CopySchema(schema->child[i].get()));
+    for (auto& child : schema->child) {
+        std::unique_ptr<Schema> ptr(CopySchema(child.get()));
         vec.push_back(std::move(ptr));
     }
     if (schema->is_array)

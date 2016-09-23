@@ -113,6 +113,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], std::vector
         }
     }
 
+    schema_vec->clear();
     for (auto& candidate : hash_schema)
         if (candidate.second.coverage > 0.1)
         schema_vec->push_back(CandidateSchema(candidate.second.schema.release(), candidate.second.coverage));
@@ -203,7 +204,12 @@ bool CandidateGen::MatchSchema(const std::vector<const Schema*>& vec, int start,
         
         start_pos->push_back(next_start);
         end_pos->push_back(next_start + len);
-        if (vec[next_start + len]->delimiter != vec[start + len]->delimiter) return true;
+        if (vec[next_start + len]->delimiter != vec[start + len]->delimiter) {
+            if (len == 0 && next_start == start + 1)
+                return false;
+            else
+                return true;
+        }
     }
     return false;
 }
@@ -223,6 +229,7 @@ inline bool CheckEndOfLine(const Schema* schema) {
 
 void CandidateGen::EstimateHash(const Schema* schema, const std::vector<int>& coverage, 
     std::map<int, double>* hash_coverage) {
+    Logger::GetLogger() << "Estimating Hash: " << ToString(schema) << "\n";
     // This is to avoid multiple coverage count
     std::map<int, int> last_match;
     int child_size = schema->child.size();
@@ -248,27 +255,36 @@ void CandidateGen::EstimateHash(const Schema* schema, const std::vector<int>& co
 
 void CandidateGen::ExtractSchema(const Schema* schema, const std::vector<int>& coverage, 
     const std::map<int, double>& hash_coverage, std::map<int, CandidateSchema>* hash_schema) {
+    // This is to avoid multiple coverage count
+    std::map<int, int> last_match;
     int child_size = schema->child.size();
+
+    std::vector<bool> end_of_line(child_size, false);
     for (int i = 0; i < child_size; ++i)
-        if (schema->child[i]->is_char && schema->child[i]->delimiter == '\n') {
+        end_of_line[i] = CheckEndOfLine(schema->child[i].get());
+
+    for (int i = 0; i < child_size; ++i)
+        if (end_of_line[i]) {
             int hashA = 0, hashB = 0, cov = 0;
             for (int j = i + 1; j < child_size; ++j) {
                 hashA = HashValue(hashA, schema->child[j].get(), MOD_A);
                 hashB = HashValue(hashB, schema->child[j].get(), MOD_B);
                 cov += coverage[j];
-                if (schema->child[j]->is_char && schema->child[j]->delimiter == '\n')
+                if (end_of_line[j])
                     if (hash_coverage.at(hashA) > 0.1) {
                         if (hash_schema->count(hashB) == 0) {
                             std::vector<std::unique_ptr<Schema>> vec;
                             for (int k = i + 1; k <= j; ++k) {
-                                std::unique_ptr<Schema> ptr(CopySchema(schema->child[i].get()));
+                                std::unique_ptr<Schema> ptr(CopySchema(schema->child[k].get()));
                                 vec.push_back(std::move(ptr));
                             }
                             (*hash_schema)[hashB].coverage = cov;
                             (*hash_schema)[hashB].schema.reset(Schema::CreateStruct(&vec));
                         }
-                        else
+                        else if (last_match[hashB] <= i) {
+                            last_match[hashB] = j;
                             hash_schema->at(hashB).coverage += cov;
+                        }
                     }
             }
         }
@@ -282,6 +298,20 @@ int CandidateGen::HashValue(int prefix_hash, const Schema* schema, int MOD) {
         ++prefix_hash;
     prefix_hash %= MOD;
 
+    if (schema->is_char) {
+        prefix_hash <<= 8;
+        prefix_hash |= (unsigned char)schema->delimiter;
+        prefix_hash %= MOD;
+        return prefix_hash;
+    } 
+    if (schema->is_array) {
+        prefix_hash <<= 8;
+        prefix_hash |= (unsigned char)schema->return_char;
+        prefix_hash %= MOD;
+        prefix_hash <<= 8;
+        prefix_hash |= (unsigned char)schema->terminate_char;
+        prefix_hash %= MOD;
+    }
     prefix_hash <<= 8;
     prefix_hash |= schema->child.size();
     prefix_hash %= MOD;

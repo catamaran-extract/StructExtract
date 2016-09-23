@@ -23,16 +23,18 @@ Logger::Logger() {
 inline std::string EscapeChar(char c) {
     if (c == '\n') return "\\n";
     else if (c == '\t') return "\\t";
-    else return std::to_string(c);
+    else return std::string(1, c);
 }
 
 std::string ToString(const Schema* schema) {
     std::string ret = "";
+    if (schema->is_char)
+        return EscapeChar(schema->delimiter);
     if (schema->is_array)
-        ret += "[";
+        ret += "{";
     for (const auto& ptr : schema->child)
         ret += ToString(ptr.get());
     if (schema->is_array)
-        ret += EscapeChar(schema->return_char) + "[" + EscapeChar(schema->terminate_char);
+        ret += EscapeChar(schema->return_char) + "}" + EscapeChar(schema->terminate_char);
     return ret;
 }
