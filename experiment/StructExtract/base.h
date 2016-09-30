@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include <memory>
 #include <vector>
 
@@ -42,3 +43,6 @@ struct ParsedTuple {
 
 const char separator_char[] = {',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','#'};
 const int separator_char_size = sizeof(separator_char) / sizeof(char);
+
+int GetFileSize(const std::string& file);
+char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* block_len);

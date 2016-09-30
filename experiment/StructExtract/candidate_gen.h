@@ -10,10 +10,13 @@
 struct CandidateSchema {
     std::unique_ptr<Schema> schema;
     double coverage;
-    CandidateSchema() : coverage(0) {}
-    CandidateSchema(Schema* schema_, double coverage_) :
-        schema(schema_), coverage(coverage_) {}
+    double all_char_coverage;
+    CandidateSchema() : coverage(0), all_char_coverage(0) {}
+    CandidateSchema(Schema* schema_, double coverage_, double all_char_coverage_) :
+        schema(schema_), coverage(coverage_), all_char_coverage(all_char_coverage_) {}
 };
+
+bool operator<(const CandidateSchema& a, const CandidateSchema& b);
 
 class CandidateGen {
 private:
@@ -26,25 +29,17 @@ private:
 
     std::vector<CandidateSchema> candidate_schema_;
 
-    char* buffer_;
-    int buffer_size_;
-
     void FilterSpecialChar(std::vector<char>* special_char);
-    void EvaluateSpecialCharSet(bool is_special_char[256], std::vector<CandidateSchema>* schema_vec);
+    void EvaluateSpecialCharSet(bool is_special_char[256], const std::vector<char>& candidate_special_char,
+        std::vector<CandidateSchema>* schema_vec);
     static void EstimateHashCoverage(const std::string& buffer, std::map<int, double>* hash_coverage);
     static void ExtractCandidate(const std::string& buffer, const std::map<int, double>& hash_coverage,
         std::map<int, CandidateSchema>* hash_schema);
-    static Schema* FoldBuffer(const std::string& buffer, std::vector<int>* cov);
-    static void EstimateHash(const Schema* schema, const std::vector<int>& cov, 
-        std::map<int, double>* hash_coverage);
+    static void EstimateHash(const Schema* schema, const std::vector<int>& cov, std::map<int, double>* hash_coverage);
     static void ExtractSchema(const Schema* schema, const std::vector<int>& cov, 
         const std::map<int, double>& hash_coverage, std::map<int, CandidateSchema>* hash_schema);
 
-    static bool MatchSchema(const std::vector<const Schema*>& vec, int start, int len, 
-        std::vector<int>* start_pos, std::vector<int>* end_pos);
-
-    static int HashValue(int prefix_hash, const Schema* schema, int MOD);
-    void SampleBlock(int pos);
+    char* RetrieveBlock(int pos, int* block_len);
 public:
     CandidateGen(const std::string& filename);
 

@@ -9,7 +9,7 @@
 Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl) {
     double best_mdl = 1e10;
     std::unique_ptr<Schema> best_schema;
-    for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 100); ++i) {
+    for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 1); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen->GetCandidate(i));
         double evaluated_mdl = evaluate_mdl->EvaluateSchema(schema.get());
         Logger::GetLogger() << "Candidate #" << std::to_string(i) << ": " << ToString(schema.get()) << "\n";
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
         bool generated_filter = false;
         while (!extract.EndOfFile()) {
             extract.ExtractNextTuple();
-            if (!generated_filter && extract.GetNumOfTuple() > 50) {
+            if (!generated_filter && extract.GetNumOfTuple() > 10000) {
                 extract.GenerateFilter();
                 generated_filter = true;
             }

@@ -22,4 +22,10 @@ Logger& operator<<(Logger& l, const T& val) {
     return l;
 }
 
+inline std::string EscapeChar(char c) {
+    if (c == '\n') return "\\n";
+    else if (c == '\t') return "\\t";
+    else return std::string(1, c);
+}
+
 std::string ToString(const Schema* schema);

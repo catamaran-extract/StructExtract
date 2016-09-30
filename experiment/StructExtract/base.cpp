@@ -1,5 +1,7 @@
 #include "base.h"
+#include "logger.h"
 #include <memory>
+#include <string>
 
 Schema* Schema::CreateChar(char delimiter) {
     Schema* schema = new Schema();
@@ -87,4 +89,25 @@ ParsedTuple* ParsedTuple::CreateStruct(std::vector<std::unique_ptr<ParsedTuple>>
     tuple->is_struct = true;
     tuple->attr.swap(*vec);
     return tuple;
+}
+
+int GetFileSize(const std::string& file) {
+    // In this function, we open the file and compute the file size
+    std::ifstream f(file, std::ios::ate | std::ios::binary);
+    if (!f.is_open())
+        Logger::GetLogger() << "Error: File Not Open!\n";
+    return (int)f.tellg();
+}
+
+char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* block_len) {
+    // In this function, we retrieve SAMPLE_LENGTH * 2 buffer from fin
+    int start = (pos > span ? pos - span : 0);
+    int end = (pos + span > file_size ? file_size : pos + span);
+
+    fin->seekg(start);
+    char* block = new char[end - start + 1];
+    fin->read(block, end - start);
+    block[end - start] = 0;
+    *block_len = end - start;
+    return block;
 }

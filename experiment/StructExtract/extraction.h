@@ -25,7 +25,6 @@ private:
     // We store the output in the memory before actually writing out
     std::vector<std::unique_ptr<ParsedTuple>> output_;
 
-    int GetFileSize(const std::string& file);
     // This function returns the max Y coordinate ever used
     void FormatTuple(const ParsedTuple* tuple, 
         std::map<std::pair<int, int>, std::string>* result, int curX, int curY, int* maxX, int* maxY);

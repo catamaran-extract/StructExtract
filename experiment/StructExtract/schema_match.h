@@ -21,6 +21,7 @@ private:
     std::vector<char> delimiter_;
     bool is_special_char_[256];
     const Schema* schema_;
+    const Schema* start_schema_;
 
     std::vector<MatchPoint> pointer_;
 

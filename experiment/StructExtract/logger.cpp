@@ -20,13 +20,9 @@ Logger::Logger() {
     f_ = std::ofstream(ss.str());
 }
 
-inline std::string EscapeChar(char c) {
-    if (c == '\n') return "\\n";
-    else if (c == '\t') return "\\t";
-    else return std::string(1, c);
-}
-
 std::string ToString(const Schema* schema) {
+    if (schema == nullptr)
+        return "nullptr";
     std::string ret = "";
     if (schema->is_char)
         return EscapeChar(schema->delimiter);

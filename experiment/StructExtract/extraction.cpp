@@ -7,16 +7,6 @@
 #include <string>
 #include <algorithm>
 
-int Extraction::GetFileSize(const std::string& file) {
-    // In this function, we open the file and compute the file size
-    std:: ifstream f(file, std::ios::ate | std::ios::binary);
-    if (!fin_.is_open()) {
-        Logger::GetLogger() << "Error: File Not Open!\n";
-    }
-    return (int)f.tellg();
-    f.close();
-}
-
 // This function initialize the extraction engine
 //      input_file : the file to be extracted
 //      buffer_file : the output file for unmatched parts of the input
@@ -27,7 +17,7 @@ Extraction::Extraction(const std::string& input_file, const std::string& output_
     end_of_file_(false),
     schema_(extract_schema)
 {
-    Logger::GetLogger() << "Extraction: input " << input_file << "; output " << output_file << "; buffer " << buffer_file << "\n";
+    Logger::GetLogger() << "Extraction: input: " << input_file << "; output: " << output_file << "; buffer: " << buffer_file << "\n";
     Logger::GetLogger() << "Schema: " << ToString(schema_) << "\n";
 
     fin_size_ = GetFileSize(input_file);
@@ -107,7 +97,7 @@ void Extraction::GenerateFilter() {
         if (mX >= (int)set_vec.size())
             set_vec.resize(mX + 1);
         for (const auto& pair : result)
-            set_vec[pair.first.second].insert(pair.second);
+            set_vec[pair.first.first].insert(pair.second);
     }
     skip_.clear();
     for (const auto& set : set_vec)
@@ -115,6 +105,9 @@ void Extraction::GenerateFilter() {
             skip_.push_back(false);
         else
             skip_.push_back(true);
+    Logger::GetLogger() << "Generated Filter:\n";
+    for (int i = 0; i <= mX; ++i)
+        Logger::GetLogger() << skip_[i] << (i == mX ? '\n' : ' ');
 }
 
 void Extraction::FlushOutput() {
@@ -122,11 +115,11 @@ void Extraction::FlushOutput() {
         int mX = 0, mY = 0;
         std::map<std::pair<int, int>, std::string> result;
         FormatTuple(ptr.get(), &result, 0, 0, &mX, &mY);
-        for (int i = 0; i <= mX; ++i)
-            for (int j = 0; j <= mY; ++j) {
-                if (result.count(std::make_pair(i, j)) > 0)
-                    fout_ << result[std::make_pair(i, j)];
-                fout_ << (j == mY ? '\n' : ',');
+        for (int i = 0; i <= mY; ++i)
+            for (int j = 0; j <= mX; ++j) if (!skip_[j]) {
+                if (result.count(std::make_pair(j, i)) > 0)
+                    fout_ << result[std::make_pair(j, i)];
+                fout_ << (j == mX ? '\n' : ',');
             }
     }
     output_.clear();
