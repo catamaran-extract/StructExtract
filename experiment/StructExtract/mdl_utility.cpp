@@ -54,10 +54,7 @@ bool CheckInt(const std::vector<std::string>& attr_vec, double* mdl) {
     }
 
     // Compute MDL for integer
-    if (max_int_value == min_int_value)
-        *mdl = 0;
-    else
-        *mdl = attr_vec.size() * log2(max_int_value - min_int_value);
+    *mdl = attr_vec.size() * log2(max_int_value - min_int_value + 1);
     return true;
 }
 

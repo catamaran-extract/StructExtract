@@ -71,6 +71,7 @@ int EvaluateMDL::FindFrequentSize(const std::vector<const ParsedTuple*>& tuples)
 }
 
 double EvaluateMDL::RestructureSchema(const std::vector<const ParsedTuple*>& tuples, Schema* schema) {
+    //Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
     // In this function, we attempt to restructure the schema to see if it is better
     // Option 1: as array
     std::vector<std::string> attr_vec;
@@ -102,20 +103,24 @@ double EvaluateMDL::RestructureSchema(const std::vector<const ParsedTuple*>& tup
         schema->is_array = false;
         schema->is_struct = true;
 
+        std::vector<std::unique_ptr<Schema>> schema_vec;
+
         int index = 0;
         for (int i = 0; i < mfreq_size; ++i) {
             for (const auto& child : schema->child) {
                 std::unique_ptr<Schema> ptr(CopySchema(child.get()));
                 ptr->index = index ++;
                 ptr->parent = schema;
-                schema->child.push_back(std::move(ptr));
+                schema_vec.push_back(std::move(ptr));
             }
 
             char delimiter = (i == mfreq_size - 1 ? schema->terminate_char : schema->return_char);
             std::unique_ptr<Schema> ptr(Schema::CreateChar(delimiter));
             ptr->index = index ++;
-            schema->child.push_back(std::move(ptr));
+            ptr->parent = schema;
+            schema_vec.push_back(std::move(ptr));
         }
+        schema->child.swap(schema_vec);
         return mdl_struct;
     }
 }

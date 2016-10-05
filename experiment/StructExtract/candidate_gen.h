@@ -21,7 +21,7 @@ bool operator<(const CandidateSchema& a, const CandidateSchema& b);
 class CandidateGen {
 private:
     const static int SAMPLE_POINTS = 100;
-    const static int EXPAND_RANGE = 10;
+    const static int EXPAND_RANGE = 5;
     const static int MOD_A = 999997, MOD_B = 1000003;
 
     std::ifstream f_;

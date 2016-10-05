@@ -116,7 +116,8 @@ void Extraction::FlushOutput() {
         std::map<std::pair<int, int>, std::string> result;
         FormatTuple(ptr.get(), &result, 0, 0, &mX, &mY);
         for (int i = 0; i <= mY; ++i)
-            for (int j = 0; j <= mX; ++j) if (!skip_[j]) {
+            for (int j = 0; j <= mX; ++j) 
+            /*if (!skip_[j])*/ {
                 if (result.count(std::make_pair(j, i)) > 0)
                     fout_ << result[std::make_pair(j, i)];
                 fout_ << (j == mX ? '\n' : ',');

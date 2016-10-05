@@ -71,6 +71,12 @@ Schema* CopySchema(const Schema* schema) {
 }
 
 int FieldCount(const Schema* schema) {
+    if (schema->is_char) {
+        if (schema->delimiter == field_char)
+            return 1;
+        else
+            return 0;
+    }
     int cnt = 0;
     for (const auto& child : schema->child)
         cnt += FieldCount(child.get());
