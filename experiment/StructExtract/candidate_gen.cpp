@@ -104,13 +104,21 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
                 Logger::GetLogger() << "Accessing Point " << sample_point[i] << ": Seek Buffer Failed\n";
             else {
                 std::string striped_buffer;
+                bool lasting_field = false;
                 for (int i = 0; i < buffer_len; ++i) {
-                    if (is_special_char[(unsigned char)raw_buffer[i]])
+                    if (is_special_char[(unsigned char)raw_buffer[i]]) {
                         striped_buffer.push_back(raw_buffer[i]);
+                        ++total_size;
+                        lasting_field = false;
+                    }
+                    else {
+                        if (!lasting_field)
+                            striped_buffer.push_back(field_char);
+                        lasting_field = true;
+                    }
                     if (potential_special_char[(unsigned char)raw_buffer[i]])
                         ++total_all_char_size;
                 }
-                total_size += striped_buffer.length();
                 delete raw_buffer;
 
                 if (iter == 0)

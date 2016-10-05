@@ -76,7 +76,7 @@ double EvaluateMDL::RestructureSchema(const std::vector<const ParsedTuple*>& tup
     std::vector<std::string> attr_vec;
     for (const ParsedTuple* tuple : tuples)
         for (const auto& attr : tuple->attr)
-            attr_vec.push_back(attr->value);
+            attr_vec.push_back(ExtractField(attr.get()));
     double mdl_array = EvaluateAttrMDL(attr_vec);
 
     // Option 2: as struct
@@ -86,27 +86,34 @@ double EvaluateMDL::RestructureSchema(const std::vector<const ParsedTuple*>& tup
         std::vector<std::string> attr_vec;
         for (const ParsedTuple* tuple : tuples)
             if (tuple->attr.size() == mfreq_size)
-                attr_vec.push_back(tuple->attr[i]->value);
+                attr_vec.push_back(ExtractField(tuple->attr[i].get()));
         mdl_struct += EvaluateAttrMDL(attr_vec);
     }
 
     for (const ParsedTuple* tuple : tuples)
         if (tuple->attr.size() != mfreq_size)
             for (const auto& attr : tuple->attr)
-                mdl_struct += (attr->value.length() + 1) * 8;
+                mdl_struct += (ExtractField(attr.get()).length() + 1) * 8;
 
     // Now we compare two options
     if (mdl_array < mdl_struct)
         return mdl_array;
     else {
         schema->is_array = false;
-        for (int i = 0; i < mfreq_size; ++i) {
-            char delimiter = (i == mfreq_size - 1 ? schema->terminate_char : schema->return_char);
-            
-            std::unique_ptr<Schema> ptr(Schema::CreateChar(delimiter));
-            ptr->index = i;
-            ptr->parent = schema;
+        schema->is_struct = true;
 
+        int index = 0;
+        for (int i = 0; i < mfreq_size; ++i) {
+            for (const auto& child : schema->child) {
+                std::unique_ptr<Schema> ptr(CopySchema(child.get()));
+                ptr->index = index ++;
+                ptr->parent = schema;
+                schema->child.push_back(std::move(ptr));
+            }
+
+            char delimiter = (i == mfreq_size - 1 ? schema->terminate_char : schema->return_char);
+            std::unique_ptr<Schema> ptr(Schema::CreateChar(delimiter));
+            ptr->index = index ++;
             schema->child.push_back(std::move(ptr));
         }
         return mdl_struct;
@@ -115,7 +122,8 @@ double EvaluateMDL::RestructureSchema(const std::vector<const ParsedTuple*>& tup
 
 double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tuples, Schema* schema) {
     std::vector<const ParsedTuple*> tuple_vec;
-    if (schema->is_array && schema->child.size() == 0)
+
+    if (IsSimpleArray(schema))
         return RestructureSchema(tuples, schema);
 
     if (schema->is_array) {
@@ -126,6 +134,7 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
         tuple_vec = tuples;
 
     if (schema->is_char) {
+        if (schema->delimiter != field_char) return 0;
         std::vector<std::string> attr_vec;
         for (const ParsedTuple* tuple : tuple_vec)
             attr_vec.push_back(tuple->value);
@@ -143,7 +152,8 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
         if (schema->is_array) {
             std::vector<std::string> attr_vec;
             for (const ParsedTuple* tuple : tuple_vec)
-                attr_vec.push_back(tuple->attr.back()->value);
+                if (tuple->attr.back()->is_field)
+                    attr_vec.push_back(tuple->attr.back()->value);
             mdl += EvaluateAttrMDL(attr_vec);
         }
         return mdl;

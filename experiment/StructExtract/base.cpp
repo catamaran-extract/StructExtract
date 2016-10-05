@@ -26,6 +26,7 @@ Schema* Schema::CreateArray(std::vector<std::unique_ptr<Schema>>* vec,
 
 Schema* Schema::CreateStruct(std::vector<std::unique_ptr<Schema>>* vec) {
     Schema* schema = new Schema();
+    schema->is_struct = true;
     schema->child.swap(*vec);
     for (int i = 0; i < (int)schema->child.size(); ++i) {
         schema->child[i]->parent = schema;
@@ -45,10 +46,9 @@ bool CheckEqual(const Schema* schemaA, const Schema* schemaB) {
         if (schemaA->return_char != schemaB->return_char) return false;
         if (schemaA->terminate_char != schemaB->terminate_char) return false;
     }
-    if (schemaB->is_array)
-        if (!schemaA->is_array) return false;
-    if (schemaB->is_char)
-        if (!schemaA->is_char) return false;
+    if (schemaA->is_struct) {
+        if (!schemaB->is_struct) return false;
+    }
     if (schemaA->child.size() != schemaB->child.size()) return false;
     for (int i = 0; i < (int)schemaA->child.size(); ++i)
         if (!CheckEqual(schemaA->child[i].get(), schemaB->child[i].get()))
@@ -70,10 +70,49 @@ Schema* CopySchema(const Schema* schema) {
         return Schema::CreateStruct(&vec);
 }
 
-ParsedTuple* ParsedTuple::CreateString(const std::string& str) {
+int FieldCount(const Schema* schema) {
+    int cnt = 0;
+    for (const auto& child : schema->child)
+        cnt += FieldCount(child.get());
+    if (schema->is_array) {
+        cnt *= 2;
+        if (schema->return_char == field_char)
+            cnt += 2;
+        if (schema->terminate_char == field_char)
+            ++cnt;
+    }
+    return cnt;
+}
+
+std::string ExtractField(const ParsedTuple* tuple) {
+    if (tuple->is_field) return tuple->value;
+    if (tuple->is_empty) return "";
+    for (const auto& attr : tuple->attr) {
+        std::string value = ExtractField(attr.get());
+        if (value != "") return value;
+    }
+    return "";
+}
+
+bool IsSimpleArray(const Schema* schema) {
+    if (!schema->is_array) return false;
+    if (schema->terminate_char == field_char) return false;
+    int field_cnt = 0;
+    for (const auto& child : schema->child)
+        field_cnt += FieldCount(child.get());
+    return (field_cnt == 1);
+}
+
+ParsedTuple* ParsedTuple::CreateEmpty() {
     ParsedTuple* tuple = new ParsedTuple();
-    tuple->is_str = true;
-    tuple->value = str;
+    tuple->is_empty = true;
+    return tuple;
+}
+
+ParsedTuple* ParsedTuple::CreateField(const std::string& field) {
+    ParsedTuple* tuple = new ParsedTuple();
+    tuple->is_field = true;
+    tuple->value = field;
     return tuple;
 }
 

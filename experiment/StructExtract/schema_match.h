@@ -24,6 +24,7 @@ private:
     const Schema* start_schema_;
 
     std::vector<MatchPoint> pointer_;
+    bool lasting_field_;
 
     void GenerateSpecialChar(const Schema* schema);
     void ExtractBuffer(std::vector<std::unique_ptr<ParsedTuple>>* buffer, 

@@ -4,6 +4,12 @@
 bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
     std::vector<int>* start_pos, std::vector<int>* end_pos) {
     if (!vec[start + len]->is_char) return false;
+    if (vec[start + len]->delimiter == field_char) return false;
+
+    int field_cnt = 0;
+    for (int i = 0; i < len; ++i)
+        field_cnt += FieldCount(vec[start + i]);
+
     for (int next_start = start + len + 1; next_start + len < (int)vec.size(); next_start += len + 1) {
         for (int i = 0; i < len; ++i)
             if (!CheckEqual(vec[start + i], vec[next_start + i]))
@@ -15,8 +21,11 @@ bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
         if (vec[next_start + len]->delimiter != vec[start + len]->delimiter) {
             if (len == 0 && next_start == start + 1)
                 return false;
-            else
-                return true;
+            else {
+                if (vec[next_start + len]->delimiter != field_char) return true;
+                if (field_cnt == 0) return true;
+                return false;
+            }
         }
     }
     return false;
@@ -55,11 +64,12 @@ int HashValue(int prefix_hash, const Schema* schema, int MOD) {
 
 Schema* FoldBuffer(const std::string& buffer, std::vector<int>* cov) {
     std::vector<std::unique_ptr<Schema>> schema;
+    cov->clear();
     for (char c : buffer) {
         std::unique_ptr<Schema> ptr(Schema::CreateChar(c));
         schema.push_back(std::move(ptr));
+        cov->push_back((c == field_char ? 0 : 1));
     }
-    *cov = std::vector<int>(buffer.length(), 1);
 
     while (1) {
         bool updated = false;

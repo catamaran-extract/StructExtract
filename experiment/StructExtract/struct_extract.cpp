@@ -9,7 +9,7 @@
 Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl) {
     double best_mdl = 1e10;
     std::unique_ptr<Schema> best_schema;
-    for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 1); ++i) {
+    for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 50); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen->GetCandidate(i));
         double evaluated_mdl = evaluate_mdl->EvaluateSchema(schema.get());
         Logger::GetLogger() << "Candidate #" << std::to_string(i) << ": " << ToString(schema.get()) << "\n";

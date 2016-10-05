@@ -61,14 +61,14 @@ Extraction::~Extraction() {
 
 void Extraction::FormatTuple(const ParsedTuple* tuple, 
     std::map<std::pair<int, int>, std::string>* result, int curX, int curY, int* maxX, int* maxY) {
-    if (tuple->is_str) {
+    if (tuple->is_field) {
         (*result)[std::make_pair(curX, curY)] = tuple->value;
         *maxX = std::max(*maxX, curX);
         *maxY = std::max(*maxY, curY);
         return;
     }
     else if (tuple->is_array) {
-        int mX = curX, mY = curY;
+        int mX = curX - 1, mY = curY - 1;
         for (const auto& ptr : tuple->attr) {
             FormatTuple(ptr.get(), result, curX, curY, &mX, &mY);
             curY = mY + 1;
@@ -76,8 +76,8 @@ void Extraction::FormatTuple(const ParsedTuple* tuple,
         *maxX = std::max(*maxX, mX);
         *maxY = std::max(*maxY, mY);
     }
-    else {
-        int mX = curX, mY = curY;
+    else if (tuple->is_struct) {
+        int mX = curX - 1, mY = curY - 1;
         for (const auto& ptr : tuple->attr) {
             FormatTuple(ptr.get(), result, curX, curY, &mX, &mY);
             curX = mX + 1;

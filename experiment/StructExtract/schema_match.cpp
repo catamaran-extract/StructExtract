@@ -8,7 +8,8 @@
 MatchPoint FindAnchor(const MatchPoint& mp, int* array_cnt) {
     MatchPoint next_mp(mp);
     // Go up
-    while (!next_mp.schema->is_array && !next_mp.schema->is_char && next_mp.schema->child.size() == next_mp.pos) {
+    while (!next_mp.schema->is_array && !next_mp.schema->is_char 
+        && next_mp.schema->child.size() == next_mp.pos) {
         if (next_mp.schema->parent == nullptr)
             return MatchPoint(nullptr, 0, mp.start_pos);
         next_mp = MatchPoint(next_mp.schema->parent, next_mp.schema->index + 1, next_mp.start_pos);
@@ -27,14 +28,15 @@ MatchPoint FindAnchor(const MatchPoint& mp, int* array_cnt) {
 }
 
 SchemaMatch::SchemaMatch(const Schema* schema) :
-    buffer_(1),
-    schema_(schema) {
+    schema_(schema),
+    lasting_field_(false) {
     // Find the concrete starting schema
     start_schema_ = FindAnchor(MatchPoint(schema, 0, 0), nullptr).schema;
     pointer_ = std::vector<MatchPoint>(1, MatchPoint(start_schema_, 0, 0));
 
     memset(is_special_char_, false, sizeof(is_special_char_));
     GenerateSpecialChar(schema);
+    is_special_char_[field_char] = false;
 }
 
 void SchemaMatch::GenerateSpecialChar(const Schema* schema) {
@@ -51,19 +53,30 @@ void SchemaMatch::GenerateSpecialChar(const Schema* schema) {
 }
 
 void SchemaMatch::Reset() {
-    buffer_ = std::vector<std::string>(1);
+    buffer_.clear();
     delimiter_.clear();
+    lasting_field_ = false;
     pointer_ = std::vector<MatchPoint>(1, MatchPoint(start_schema_, 0, 0));
 }
 
 void SchemaMatch::FeedChar(char c) {
     if (!is_special_char_[(unsigned char)c]) {
-        buffer_.back().push_back(c);
-        return;
+        if (lasting_field_) {
+            buffer_.back().push_back(c);
+            return;
+        } 
+        else {
+            buffer_.push_back(std::string(1, c));
+            delimiter_.push_back(field_char);
+            lasting_field_ = true;
+            // In the next section, we will match the field placeholder character instead
+            c = field_char;
+        }
     }
     else {
-        delimiter_.push_back(c);
         buffer_.push_back("");
+        delimiter_.push_back(c);
+        lasting_field_ = false;
     }
 
     // Match the next character
@@ -90,10 +103,6 @@ void SchemaMatch::FeedChar(char c) {
     pointer_ = next_pointer_;
     if (c == '\n')
         pointer_.push_back(MatchPoint(start_schema_, 0, delimiter_.size()));
-
-    //Logger::GetLogger() << "Feed Char " << EscapeChar(c) << "; MatchPoint Size: " << pointer_.size() << "\n";
-    //for (const MatchPoint& mp : pointer_)
-    //    Logger::GetLogger() << "MatchPoint: " << mp.pos << ", " << ToString(mp.schema) << ", " << mp.start_pos << "\n";
 }
 
 bool SchemaMatch::TupleAvailable() const {
@@ -118,10 +127,11 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
             earliest_match = std::min(earliest_match, mp.start_pos);
 
     // Write unmatched parts to buffer
-    for (int i = 0; i < earliest_match; ++i) {
+    for (int i = 0; i < earliest_match; ++i)
+    if (delimiter_[i] == field_char)
         buffer->append(buffer_[i]);
+    else
         buffer->push_back(delimiter_[i]);
-    }
 
     std::vector<int> array_start;
     std::vector<std::unique_ptr<ParsedTuple>> buffer_stack;
@@ -134,7 +144,12 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
             array_start.push_back(buffer_stack.size());
 
         // First create a single string tuple and push it into the stack
-        std::unique_ptr<ParsedTuple> new_tuple(ParsedTuple::CreateString(buffer_[i]));
+        std::unique_ptr<ParsedTuple> new_tuple;
+        if (delimiter_[i] == field_char)
+            new_tuple.reset(ParsedTuple::CreateField(buffer_[i]));
+        else
+            new_tuple.reset(ParsedTuple::CreateEmpty());
+
         buffer_stack.push_back(std::move(new_tuple));
         if (mp.schema->is_char)
             mp = MatchPoint(mp.schema->parent, mp.schema->index + 1, 0);
@@ -163,7 +178,7 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
         }
 
         // Now mp could be at the end of struct
-        while (!mp.schema->is_array && !mp.schema->is_char && mp.schema->child.size() == mp.pos) {
+        while (mp.schema->is_struct && mp.schema->child.size() == mp.pos) {
             std::vector<std::unique_ptr<ParsedTuple>> temp;
             ExtractBuffer(&buffer_stack, &temp, mp.schema->child.size());
 
@@ -181,10 +196,11 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
 }
 
 std::string SchemaMatch::GetBuffer() {
-    std::string ret = buffer_[0];
-    for (int i = 0; i < (int)delimiter_.size(); ++i) {
+    std::string ret = "";
+    for (int i = 0; i < (int)delimiter_.size(); ++i)
+    if (delimiter_[i] == field_char)
+        ret.append(buffer_[i]);
+    else
         ret.push_back(delimiter_[i]);
-        ret.append(buffer_[i + 1]);
-    }
     return ret;
 }
