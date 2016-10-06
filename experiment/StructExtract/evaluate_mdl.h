@@ -23,7 +23,7 @@ private:
     void ParseBlock(const Schema* schema, const char* block, int block_len);
     static int FindFrequentSize(const std::vector<const ParsedTuple*>& tuples);
 
-    static double RestructureSchema(const std::vector<const ParsedTuple*>& tuples, Schema* schema);
+    static double RestructureMDL(const std::vector<const ParsedTuple*>& tuples, const Schema* schema, int* freq_size);
     static double EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tuples, Schema* schema);
     static double EvaluateAttrMDL(const std::vector<std::string>& attr_vec);
 

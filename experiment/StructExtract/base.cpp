@@ -35,80 +35,6 @@ Schema* Schema::CreateStruct(std::vector<std::unique_ptr<Schema>>* vec) {
     return schema;
 }
 
-bool CheckEqual(const Schema* schemaA, const Schema* schemaB) {
-    if (schemaA->is_char) {
-        if (!schemaB->is_char) return false;
-        if (schemaA->delimiter != schemaB->delimiter) return false;
-        return true;
-    }
-    if (schemaA->is_array) {
-        if (!schemaB->is_array) return false;
-        if (schemaA->return_char != schemaB->return_char) return false;
-        if (schemaA->terminate_char != schemaB->terminate_char) return false;
-    }
-    if (schemaA->is_struct) {
-        if (!schemaB->is_struct) return false;
-    }
-    if (schemaA->child.size() != schemaB->child.size()) return false;
-    for (int i = 0; i < (int)schemaA->child.size(); ++i)
-        if (!CheckEqual(schemaA->child[i].get(), schemaB->child[i].get()))
-            return false;
-    return true;
-}
-
-Schema* CopySchema(const Schema* schema) {
-    if (schema->is_char)
-        return Schema::CreateChar(schema->delimiter);
-    std::vector<std::unique_ptr<Schema>> vec;
-    for (auto& child : schema->child) {
-        std::unique_ptr<Schema> ptr(CopySchema(child.get()));
-        vec.push_back(std::move(ptr));
-    }
-    if (schema->is_array)
-        return Schema::CreateArray(&vec, schema->return_char, schema->terminate_char);
-    else
-        return Schema::CreateStruct(&vec);
-}
-
-int FieldCount(const Schema* schema) {
-    if (schema->is_char) {
-        if (schema->delimiter == field_char)
-            return 1;
-        else
-            return 0;
-    }
-    int cnt = 0;
-    for (const auto& child : schema->child)
-        cnt += FieldCount(child.get());
-    if (schema->is_array) {
-        cnt *= 2;
-        if (schema->return_char == field_char)
-            cnt += 2;
-        if (schema->terminate_char == field_char)
-            ++cnt;
-    }
-    return cnt;
-}
-
-std::string ExtractField(const ParsedTuple* tuple) {
-    if (tuple->is_field) return tuple->value;
-    if (tuple->is_empty) return "";
-    for (const auto& attr : tuple->attr) {
-        std::string value = ExtractField(attr.get());
-        if (value != "") return value;
-    }
-    return "";
-}
-
-bool IsSimpleArray(const Schema* schema) {
-    if (!schema->is_array) return false;
-    if (schema->terminate_char == field_char) return false;
-    int field_cnt = 0;
-    for (const auto& child : schema->child)
-        field_cnt += FieldCount(child.get());
-    return (field_cnt == 1);
-}
-
 ParsedTuple* ParsedTuple::CreateEmpty() {
     ParsedTuple* tuple = new ParsedTuple();
     tuple->is_empty = true;
@@ -126,6 +52,8 @@ ParsedTuple* ParsedTuple::CreateArray(std::vector<std::unique_ptr<ParsedTuple>>*
     ParsedTuple* tuple = new ParsedTuple();
     tuple->is_array = true;
     tuple->attr.swap(*vec);
+    for (auto& ptr : tuple->attr)
+        ptr->parent = tuple;
     return tuple;
 }
 
@@ -133,6 +61,8 @@ ParsedTuple* ParsedTuple::CreateStruct(std::vector<std::unique_ptr<ParsedTuple>>
     ParsedTuple* tuple = new ParsedTuple();
     tuple->is_struct = true;
     tuple->attr.swap(*vec);
+    for (auto& ptr : tuple->attr)
+        ptr->parent = tuple;
     return tuple;
 }
 

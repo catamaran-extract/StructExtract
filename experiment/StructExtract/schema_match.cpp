@@ -154,14 +154,12 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
         if (mp.schema->is_char)
             mp = MatchPoint(mp.schema->parent, mp.schema->index + 1, 0);
         else if (mp.schema->is_array) {
-            // We first create a struct if necessary
-            if (mp.schema->child.size() != 0) {
-                std::vector<std::unique_ptr<ParsedTuple>> temp;
-                ExtractBuffer(&buffer_stack, &temp, mp.schema->child.size() + 1);
+            // We first create a struct for the current occurrence
+            std::vector<std::unique_ptr<ParsedTuple>> temp;
+            ExtractBuffer(&buffer_stack, &temp, mp.schema->child.size() + 1);
 
-                std::unique_ptr<ParsedTuple> new_tuple(ParsedTuple::CreateStruct(&temp));
-                buffer_stack.push_back(std::move(new_tuple));
-            }
+            std::unique_ptr<ParsedTuple> new_tuple(ParsedTuple::CreateStruct(&temp));
+            buffer_stack.push_back(std::move(new_tuple));
 
             if (delimiter_[i] == mp.schema->return_char)
                 mp.pos = 0;
@@ -174,16 +172,16 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
                 buffer_stack.push_back(std::move(new_tuple));
 
                 mp = MatchPoint(mp.schema->parent, mp.schema->index + 1, 0);
+                array_start.pop_back();
             }
         }
-
         // Now mp could be at the end of struct
         while (mp.schema->is_struct && mp.schema->child.size() == mp.pos) {
             std::vector<std::unique_ptr<ParsedTuple>> temp;
             ExtractBuffer(&buffer_stack, &temp, mp.schema->child.size());
 
             std::unique_ptr<ParsedTuple> new_tuple(ParsedTuple::CreateStruct(&temp));
-            if (mp.schema->parent == nullptr)
+            if (mp.schema->parent == nullptr) 
                 return new_tuple.release();
             else
                 buffer_stack.push_back(std::move(new_tuple));

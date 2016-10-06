@@ -34,3 +34,22 @@ std::string ToString(const Schema* schema) {
         ret += EscapeChar(schema->return_char) + "}" + EscapeChar(schema->terminate_char);
     return ret;
 }
+
+std::string ToString(const ParsedTuple* tuple) {
+    if (tuple->is_empty)
+        return "";
+    if (tuple->is_field)
+        return tuple->value;
+    std::string ret = "";
+    if (tuple->is_array)
+        ret += "[";
+    if (tuple->is_struct)
+        ret += "<";
+    for (const auto& ptr : tuple->attr)
+        ret += ToString(ptr.get()) + ";";
+    if (tuple->is_array)
+        ret += "]";
+    if (tuple->is_struct)
+        ret += ">";
+    return ret;
+}

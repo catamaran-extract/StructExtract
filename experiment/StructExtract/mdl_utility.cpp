@@ -149,8 +149,7 @@ double CheckArbitraryLength(const std::vector<std::string>& attr_vec) {
     return FrequencyToMDL(freq);
 }
 
-double FrequencyToMDL(const std::vector<int>& vec)
-{
+double FrequencyToMDL(const std::vector<int>& vec) {
     double sum = 0, total = 0;
     for (int num : vec) {
         sum += num * log2(num);
@@ -158,4 +157,13 @@ double FrequencyToMDL(const std::vector<int>& vec)
     }
     if (total == 0) return 0;
     return total * log2(total) - sum;
+}
+
+double TrivialMDL(const ParsedTuple* tuple) {
+    if (tuple->is_empty) return 8;
+    if (tuple->is_field) return tuple->value.length() * 8;
+    double mdl = 0;
+    for (const auto& child : tuple->attr)
+        mdl += TrivialMDL(child.get());
+    return mdl;
 }

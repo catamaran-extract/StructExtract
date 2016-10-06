@@ -1,6 +1,7 @@
 #include "base.h"
 #include "evaluate_mdl.h"
 #include "schema_match.h"
+#include "schema_utility.h"
 #include "mdl_utility.h"
 #include "logger.h"
 
@@ -61,7 +62,7 @@ int EvaluateMDL::FindFrequentSize(const std::vector<const ParsedTuple*>& tuples)
     std::map<int, int> freq_cnt;
     for (const ParsedTuple* tuple : tuples)
         ++freq_cnt[tuple->attr.size()];
-    int mfreq = 0, mfreq_size;
+    int mfreq = 0, mfreq_size = -1;
     for (const auto& pair : freq_cnt)
         if (pair.second > mfreq) {
             mfreq = pair.second;
@@ -70,82 +71,59 @@ int EvaluateMDL::FindFrequentSize(const std::vector<const ParsedTuple*>& tuples)
     return mfreq_size;
 }
 
-double EvaluateMDL::RestructureSchema(const std::vector<const ParsedTuple*>& tuples, Schema* schema) {
-    //Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
+double EvaluateMDL::RestructureMDL(const std::vector<const ParsedTuple*>& tuples, const Schema* schema, int* freq_size) {
+    Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
     // In this function, we attempt to restructure the schema to see if it is better
-    // Option 1: as array
-    std::vector<std::string> attr_vec;
-    for (const ParsedTuple* tuple : tuples)
-        for (const auto& attr : tuple->attr)
-            attr_vec.push_back(ExtractField(attr.get()));
-    double mdl_array = EvaluateAttrMDL(attr_vec);
-
-    // Option 2: as struct
     double mdl_struct = 0;
     int mfreq_size = FindFrequentSize(tuples);
     for (int i = 0; i < mfreq_size; ++i) {
-        std::vector<std::string> attr_vec;
+        std::vector<const ParsedTuple*> tuple_vec;
         for (const ParsedTuple* tuple : tuples)
             if (tuple->attr.size() == mfreq_size)
-                attr_vec.push_back(ExtractField(tuple->attr[i].get()));
-        mdl_struct += EvaluateAttrMDL(attr_vec);
+                tuple_vec.push_back(tuple->attr[i].get());
+        std::unique_ptr<Schema> struct_schema(ArrayToStruct(schema, 1));
+        mdl_struct += EvaluateTupleMDL(tuple_vec, struct_schema.get());
     }
 
     for (const ParsedTuple* tuple : tuples)
         if (tuple->attr.size() != mfreq_size)
-            for (const auto& attr : tuple->attr)
-                mdl_struct += (ExtractField(attr.get()).length() + 1) * 8;
+            for (const auto& attr : tuple->attr) 
+                mdl_struct += TrivialMDL(GetRoot(attr.get()));
 
-    // Now we compare two options
-    if (mdl_array < mdl_struct)
-        return mdl_array;
-    else {
-        schema->is_array = false;
-        schema->is_struct = true;
-
-        std::vector<std::unique_ptr<Schema>> schema_vec;
-
-        int index = 0;
-        for (int i = 0; i < mfreq_size; ++i) {
-            for (const auto& child : schema->child) {
-                std::unique_ptr<Schema> ptr(CopySchema(child.get()));
-                ptr->index = index ++;
-                ptr->parent = schema;
-                schema_vec.push_back(std::move(ptr));
-            }
-
-            char delimiter = (i == mfreq_size - 1 ? schema->terminate_char : schema->return_char);
-            std::unique_ptr<Schema> ptr(Schema::CreateChar(delimiter));
-            ptr->index = index ++;
-            ptr->parent = schema;
-            schema_vec.push_back(std::move(ptr));
-        }
-        schema->child.swap(schema_vec);
-        return mdl_struct;
-    }
+    *freq_size = mfreq_size;
+    Logger::GetLogger() << "MDL_Struct: " << mdl_struct << "\n";
+    return mdl_struct;
 }
 
 double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tuples, Schema* schema) {
-    std::vector<const ParsedTuple*> tuple_vec;
-
-    if (IsSimpleArray(schema))
-        return RestructureSchema(tuples, schema);
-
-    if (schema->is_array) {
-        for (const ParsedTuple* tuple : tuples)
-            for (const auto& attr : tuple->attr)
-                tuple_vec.push_back(attr.get());
-    } else
-        tuple_vec = tuples;
+    //Logger::GetLogger() << "Tuple MDL: " << ToString(schema) << "\n";
+    //Logger::GetLogger() << "Representative Tuple: " << ToString(tuples[0]) << "\n";
 
     if (schema->is_char) {
         if (schema->delimiter != field_char) return 0;
         std::vector<std::string> attr_vec;
-        for (const ParsedTuple* tuple : tuple_vec)
+        for (const ParsedTuple* tuple : tuples)
             attr_vec.push_back(tuple->value);
         return EvaluateAttrMDL(attr_vec);
     }
-    else {
+    else if (schema->is_struct) {
+        double mdl = 0;
+        for (int i = 0; i < (int)schema->child.size(); ++i) {
+            std::vector<const ParsedTuple*> child_tuples;
+            for (const ParsedTuple* tuple : tuples)
+                child_tuples.push_back(tuple->attr[i].get());
+            mdl += EvaluateTupleMDL(child_tuples, schema->child[i].get());
+        }
+        return mdl;
+    } else {
+        std::vector<const ParsedTuple*> tuple_vec;
+        for (const ParsedTuple* tuple : tuples)
+            for (const auto& attr : tuple->attr)
+                tuple_vec.push_back(attr.get());
+
+        int freq_size;
+        double mdl_struct = RestructureMDL(tuples, schema, &freq_size);
+
         double mdl = 0;
         for (int i = 0; i < (int)schema->child.size(); ++i) {
             std::vector<const ParsedTuple*> child_tuples;
@@ -153,13 +131,18 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
                 child_tuples.push_back(tuple->attr[i].get());
             mdl += EvaluateTupleMDL(child_tuples, schema->child[i].get());
         }
-        // For arrays, we need to add the last attribute
-        if (schema->is_array) {
-            std::vector<std::string> attr_vec;
-            for (const ParsedTuple* tuple : tuple_vec)
-                if (tuple->attr.back()->is_field)
-                    attr_vec.push_back(tuple->attr.back()->value);
-            mdl += EvaluateAttrMDL(attr_vec);
+        // we need to add the last attribute
+        std::vector<std::string> attr_vec;
+        for (const ParsedTuple* tuple : tuple_vec)
+            if (tuple->attr.back()->is_field)
+                attr_vec.push_back(tuple->attr.back()->value);
+        mdl += EvaluateAttrMDL(attr_vec);
+        
+        // We also need to compare with restructure result
+        if (mdl > mdl_struct) {
+            std::unique_ptr<Schema> ptr(ArrayToStruct(schema, freq_size));
+            CopySchema(ptr.get(), schema);
+            return mdl_struct;
         }
         return mdl;
     }

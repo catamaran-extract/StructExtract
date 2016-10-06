@@ -14,3 +14,11 @@ bool CheckRedundancy(const Schema* schema);
 int HashValue(int prefix_hash, const Schema* schema, int MOD);
 // Check whether the current schema can be the end-of-line schema
 bool CheckEndOfLine(const Schema* schema); 
+
+bool CheckEqual(const Schema* schemaA, const Schema* schemaB);
+Schema* CopySchema(const Schema* schema);
+void CopySchema(const Schema* source, Schema* target);
+Schema* ArrayToStruct(const Schema* schema, int repeat_time);
+
+int FieldCount(const Schema* schema);
+const ParsedTuple* GetRoot(const ParsedTuple* tuple);

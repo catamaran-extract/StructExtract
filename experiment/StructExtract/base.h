@@ -28,12 +28,6 @@ public:
     static Schema* CreateStruct(std::vector<std::unique_ptr<Schema>>* vec);
 };
 
-bool CheckEqual(const Schema* schemaA, const Schema* schemaB); 
-Schema* CopySchema(const Schema* schema);
-
-int FieldCount(const Schema* schema);
-bool IsSimpleArray(const Schema* schema);
-
 struct ParsedTuple {
     bool is_empty;
     bool is_field;
@@ -41,16 +35,15 @@ struct ParsedTuple {
     bool is_struct;
     std::string value;
     std::vector<std::unique_ptr<ParsedTuple>> attr;
+    const ParsedTuple* parent;
 
-    ParsedTuple() : is_empty(false), is_field(false), is_array(false), is_struct(false) {}
+    ParsedTuple() : is_empty(false), is_field(false), is_array(false), is_struct(false), parent(nullptr) {}
 
     static ParsedTuple* CreateEmpty();
     static ParsedTuple* CreateField(const std::string& str);
     static ParsedTuple* CreateArray(std::vector<std::unique_ptr<ParsedTuple>>* vec);
     static ParsedTuple* CreateStruct(std::vector<std::unique_ptr<ParsedTuple>>* vec);
 };
-
-std::string ExtractField(const ParsedTuple* tuple);
 
 const char separator_char[] = {',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','#'};
 const int separator_char_size = sizeof(separator_char) / sizeof(char);

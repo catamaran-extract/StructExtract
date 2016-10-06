@@ -1,5 +1,6 @@
 #include "schema_utility.h"
 #include <set>
+#include <algorithm>
 
 bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
     std::vector<int>* start_pos, std::vector<int>* end_pos) {
@@ -19,7 +20,9 @@ bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
         start_pos->push_back(next_start);
         end_pos->push_back(next_start + len);
         if (vec[next_start + len]->delimiter != vec[start + len]->delimiter) {
-            if (len == 0 && next_start == start + 1)
+            if (len == 0 && next_start < start + 3)
+                return false;
+            else if (len == 1 && next_start == start + 2)
                 return false;
             else {
                 if (vec[next_start + len]->delimiter != field_char) return true;
@@ -76,7 +79,7 @@ Schema* FoldBuffer(const std::string& buffer, std::vector<int>* cov) {
         std::vector<const Schema*> vec;
         for (const auto& ptr : schema)
             vec.push_back(ptr.get());
-        for (int len = 0; len < (int)schema.size(); ++len)
+        for (int len = 0; len < std::min((int)schema.size(), 50); ++len)
             for (int i = 0; i + len < (int)schema.size(); ++i) {
                 std::vector<int> start_pos, end_pos;
                 if (CheckArray(vec, i, len, &start_pos, &end_pos)) {
@@ -150,4 +153,98 @@ bool CheckRedundancy(const Schema* schema) {
                 return true;
         }
     return false;
+}
+
+bool CheckEqual(const Schema* schemaA, const Schema* schemaB) {
+    if (schemaA->is_char) {
+        if (!schemaB->is_char) return false;
+        if (schemaA->delimiter != schemaB->delimiter) return false;
+        return true;
+    }
+    if (schemaA->is_array) {
+        if (!schemaB->is_array) return false;
+        if (schemaA->return_char != schemaB->return_char) return false;
+        if (schemaA->terminate_char != schemaB->terminate_char) return false;
+    }
+    if (schemaA->is_struct) {
+        if (!schemaB->is_struct) return false;
+    }
+    if (schemaA->child.size() != schemaB->child.size()) return false;
+    for (int i = 0; i < (int)schemaA->child.size(); ++i)
+        if (!CheckEqual(schemaA->child[i].get(), schemaB->child[i].get()))
+            return false;
+    return true;
+}
+
+Schema* CopySchema(const Schema* schema) {
+    if (schema->is_char)
+        return Schema::CreateChar(schema->delimiter);
+    std::vector<std::unique_ptr<Schema>> vec;
+    for (const auto& child : schema->child) {
+        std::unique_ptr<Schema> ptr(CopySchema(child.get()));
+        vec.push_back(std::move(ptr));
+    }
+    if (schema->is_array)
+        return Schema::CreateArray(&vec, schema->return_char, schema->terminate_char);
+    else
+        return Schema::CreateStruct(&vec);
+}
+
+void CopySchema(const Schema* source, Schema* target) {
+    target->is_array = source->is_array;
+    target->is_char = source->is_char;
+    target->is_struct = source->is_struct;
+    target->delimiter = source->delimiter;
+    target->return_char = source->return_char;
+    target->terminate_char = source->terminate_char;
+
+    target->child.clear();
+    int index = 0;
+    for (const auto& child : source->child) {
+        std::unique_ptr<Schema> ptr(CopySchema(child.get()));
+        ptr->parent = target;
+        ptr->index = index++;
+        target->child.push_back(std::move(ptr));
+    }
+}
+
+Schema* ArrayToStruct(const Schema* schema, int repeat_time) {
+    std::vector<std::unique_ptr<Schema>> schema_vec;
+
+    for (int i = 0; i < repeat_time; ++i) {
+        for (const auto& child : schema->child) {
+            std::unique_ptr<Schema> ptr(CopySchema(child.get()));
+            schema_vec.push_back(std::move(ptr));
+        }
+
+        char delimiter = (i == repeat_time - 1 ? schema->terminate_char : schema->return_char);
+        std::unique_ptr<Schema> ptr(Schema::CreateChar(delimiter));
+        schema_vec.push_back(std::move(ptr));
+    }
+    return Schema::CreateStruct(&schema_vec);
+}
+
+int FieldCount(const Schema* schema) {
+    if (schema->is_char) {
+        if (schema->delimiter == field_char)
+            return 1;
+        else
+            return 0;
+    }
+    int cnt = 0;
+    for (const auto& child : schema->child)
+        cnt += FieldCount(child.get());
+    if (schema->is_array) {
+        cnt *= 2;
+        if (schema->return_char == field_char)
+            cnt += 2;
+        if (schema->terminate_char == field_char)
+            ++cnt;
+    }
+    return cnt;
+}
+
+const ParsedTuple* GetRoot(const ParsedTuple* tuple) {
+    if (tuple->parent == nullptr) return tuple;
+    return GetRoot(tuple->parent);
 }

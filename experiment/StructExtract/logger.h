@@ -30,3 +30,4 @@ inline std::string EscapeChar(char c) {
 }
 
 std::string ToString(const Schema* schema);
+std::string ToString(const ParsedTuple* tuple);

@@ -9,3 +9,4 @@ bool CheckFixedLength(const std::vector<std::string>& attr_vec, double* mdl);
 double CheckArbitraryLength(const std::vector<std::string>& attr_vec);
 
 double FrequencyToMDL(const std::vector<int>& vec);
+double TrivialMDL(const ParsedTuple* tuple);
