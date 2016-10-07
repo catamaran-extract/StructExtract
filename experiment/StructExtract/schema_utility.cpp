@@ -10,6 +10,9 @@ bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
     int field_cnt = 0;
     for (int i = 0; i < len; ++i)
         field_cnt += FieldCount(vec[start + i]);
+    for (int i = start; i <= start + len; ++i)
+        if (vec[i]->is_char && vec[i]->delimiter == '\n')
+            return false;
 
     for (int next_start = start + len + 1; next_start + len < (int)vec.size(); next_start += len + 1) {
         for (int i = 0; i < len; ++i)

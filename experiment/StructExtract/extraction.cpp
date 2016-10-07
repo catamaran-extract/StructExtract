@@ -42,6 +42,7 @@ void Extraction::ExtractNextTuple()
             std::unique_ptr<ParsedTuple> ptr(schema_match.GetTuple(&buffer));
 
             output_.push_back(std::move(ptr));
+            fbuffer_size_ += buffer.length();
             fbuffer_ << buffer;
             return;
         }

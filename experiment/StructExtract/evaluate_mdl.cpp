@@ -17,7 +17,15 @@ EvaluateMDL::EvaluateMDL(const std::string& filename) {
 void EvaluateMDL::ParseBlock(const Schema* schema, const char* block, int block_len) {
     int last_tuple_end = 0;
     SchemaMatch schema_match(schema);
-    for (int i = 0; i < block_len; ++i) 
+    int first_end_of_line = -1;
+    for (int i = 0; i < block_len; ++i)
+        if (block[i] == '\n') {
+            first_end_of_line = i;
+            break;
+        }
+    if (first_end_of_line == -1)
+        return;
+    for (int i = first_end_of_line + 1; i < block_len; ++i) 
     if (block[i] != '\r') {
         schema_match.FeedChar(block[i]);
         if (block[i] == '\n' && schema_match.TupleAvailable()) {
@@ -91,7 +99,6 @@ double EvaluateMDL::RestructureMDL(const std::vector<const ParsedTuple*>& tuples
                 mdl_struct += TrivialMDL(GetRoot(attr.get()));
 
     *freq_size = mfreq_size;
-    Logger::GetLogger() << "MDL_Struct: " << mdl_struct << "\n";
     return mdl_struct;
 }
 
@@ -149,14 +156,25 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
 }
 
 double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
+    if (attr_vec.size() == 0) return 0;
+    Logger::GetLogger() << "Evaluating Attr MDL: <example: " << attr_vec[0] << ">\n";
     double mdl = CheckArbitraryLength(attr_vec), temp;
-    if (CheckEnum(attr_vec, &temp))
+    if (CheckEnum(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-    if (CheckInt(attr_vec, &temp))
+        Logger::GetLogger() << "Enum MDL = " << temp << "\n";
+    }
+    if (CheckInt(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-    if (CheckDouble(attr_vec, &temp))
+        Logger::GetLogger() << "Int MDL = " << temp << "\n";
+    }
+    if (CheckDouble(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-    if (CheckFixedLength(attr_vec, &temp))
+        Logger::GetLogger() << "Double MDL = " << temp << "\n";
+    }
+    if (CheckFixedLength(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
+        Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
+    }
+    Logger::GetLogger() << "MDL = " << mdl << "\n";
     return mdl;
 }
