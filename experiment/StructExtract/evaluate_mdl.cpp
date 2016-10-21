@@ -80,7 +80,7 @@ int EvaluateMDL::FindFrequentSize(const std::vector<const ParsedTuple*>& tuples)
 }
 
 double EvaluateMDL::RestructureMDL(const std::vector<const ParsedTuple*>& tuples, const Schema* schema, int* freq_size) {
-    Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
+    //Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
     // In this function, we attempt to restructure the schema to see if it is better
     double mdl_struct = 0;
     int mfreq_size = FindFrequentSize(tuples);
@@ -157,24 +157,24 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
 
 double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
     if (attr_vec.size() == 0) return 0;
-    Logger::GetLogger() << "Evaluating Attr MDL: <example: " << attr_vec[0] << ">\n";
+    //Logger::GetLogger() << "Evaluating Attr MDL: <example: " << attr_vec[0] << ">\n";
     double mdl = CheckArbitraryLength(attr_vec), temp;
     if (CheckEnum(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-        Logger::GetLogger() << "Enum MDL = " << temp << "\n";
+        //Logger::GetLogger() << "Enum MDL = " << temp << "\n";
     }
     if (CheckInt(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-        Logger::GetLogger() << "Int MDL = " << temp << "\n";
+        //Logger::GetLogger() << "Int MDL = " << temp << "\n";
     }
     if (CheckDouble(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-        Logger::GetLogger() << "Double MDL = " << temp << "\n";
+        //Logger::GetLogger() << "Double MDL = " << temp << "\n";
     }
     if (CheckFixedLength(attr_vec, &temp)) {
         mdl = std::min(mdl, temp);
-        Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
+        //Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
     }
-    Logger::GetLogger() << "MDL = " << mdl << "\n";
+    //Logger::GetLogger() << "MDL = " << mdl << "\n";
     return mdl;
 }
