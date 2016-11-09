@@ -13,7 +13,7 @@ Schema* ShiftSchema(const Schema* schema, const std::string& file_name) {
     std::unique_ptr<Schema> best_schema(CopySchema(schema));
     int earliest_match = 1000000;
     for (int i = 0; i < (int)schema->child.size(); ++i)
-    if (schema->child[i]->is_char && schema->child[i]->delimiter == '\n') {
+    if (CheckEndOfLine(schema->child[i].get())) {
         std::vector<std::unique_ptr<Schema>> schema_vec;
         for (int j = i + 1; j < (int)schema->child.size(); ++j) {
             std::unique_ptr<Schema> ptr(CopySchema(schema->child[j].get()));
@@ -26,7 +26,6 @@ Schema* ShiftSchema(const Schema* schema, const std::string& file_name) {
         std::unique_ptr<Schema> shifted_schema(Schema::CreateStruct(&schema_vec));
         SchemaMatch schema_match(shifted_schema.get());
 
-        schema_match.FeedChar('\n');
         std::ifstream fin(file_name);
         char c;
         int pos = 0;
@@ -51,9 +50,11 @@ Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, con
     for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 50); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen->GetCandidate(i));
         std::unique_ptr<Schema> shifted_schema(ShiftSchema(schema.get(), filename));
-        double evaluated_mdl = evaluate_mdl->EvaluateSchema(shifted_schema.get());
         Logger::GetLogger() << "Candidate #" << std::to_string(i) << ": " << ToString(schema.get()) << "\n";
         Logger::GetLogger() << "Shifted Schema: " << ToString(shifted_schema.get()) << "\n";
+
+        double evaluated_mdl = evaluate_mdl->EvaluateSchema(shifted_schema.get());
+        Logger::GetLogger() << "Final Schema: " << ToString(shifted_schema.get()) << "\n";
         Logger::GetLogger() << "MDL: " << std::to_string(evaluated_mdl) << "\n";
 
         if (evaluated_mdl < best_mdl) {
@@ -71,7 +72,7 @@ int main(int argc, char** argv)
 {
     if (argc != 3) {
         std::cerr << "Usage: StructExtract <input file> <output_file>\n";
-        std::cerr << "Note: The output file names will be <output_file>_?.csv\n";
+        std::cerr << "Note: The output file names will be <output_file>_?.tsv\n";
         return 1;
     }
 
@@ -94,7 +95,7 @@ int main(int argc, char** argv)
         std::unique_ptr<Schema> schema(SelectSchema(&candidate_gen, &evaluate_mdl, input_file));
 
         // Extract
-        std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".csv");
+        std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".tsv");
         std::string buffer_file = (buffer_prefix + "_" + std::to_string(iteration) + ".txt");
         Extraction extract(input_file, output_file, buffer_file, schema.get());
         if (file_size == -1)
@@ -103,7 +104,7 @@ int main(int argc, char** argv)
         bool generated_filter = false;
         while (!extract.EndOfFile()) {
             extract.ExtractNextTuple();
-            if (!generated_filter && extract.GetNumOfTuple() > 10000) {
+            if (!generated_filter && extract.GetNumOfTuple() > 1000) {
                 extract.GenerateFilter();
                 generated_filter = true;
             }

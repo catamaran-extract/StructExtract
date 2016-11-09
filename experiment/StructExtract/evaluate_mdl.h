@@ -11,11 +11,11 @@
 
 class EvaluateMDL {
 private:
-    const int SAMPLE_POINTS = 100;
-    const int SAMPLE_LENGTH = 5000;
+    const int FILE_SIZE;
+    const int SAMPLE_POINTS;
+    const int SAMPLE_LENGTH = 20000;
 
     std::ifstream f_;
-    int file_size_;
 
     std::vector<std::unique_ptr<ParsedTuple>> sampled_tuples_;
     int unaccounted_char_;

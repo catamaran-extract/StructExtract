@@ -9,8 +9,9 @@
 #include <map>
 #include <algorithm>
 
-EvaluateMDL::EvaluateMDL(const std::string& filename) {
-    file_size_ = GetFileSize(filename);
+EvaluateMDL::EvaluateMDL(const std::string& filename) :
+    FILE_SIZE(GetFileSize(filename)),
+    SAMPLE_POINTS(std::min(std::max(FILE_SIZE / SAMPLE_LENGTH, 1), 50)) {
     f_.open(filename, std::ios::binary);
 }
 
@@ -44,7 +45,7 @@ double EvaluateMDL::EvaluateSchema(Schema* schema)
 {
     Logger::GetLogger() << "Evaluating Schema: " << ToString(schema) << "\n";
     std::default_random_engine gen;;
-    std::uniform_int_distribution<int> dist(0, file_size_);
+    std::uniform_int_distribution<int> dist(0, FILE_SIZE);
 
     std::vector<int> sample_point;
     for (int i = 0; i < SAMPLE_POINTS; ++i)
@@ -55,14 +56,16 @@ double EvaluateMDL::EvaluateSchema(Schema* schema)
     for (int i = 0; i < SAMPLE_POINTS; ++i) {
         int block_len; char* block;
         
-        block = SampleBlock(&f_, file_size_, sample_point[i], SAMPLE_LENGTH, &block_len);
+        block = SampleBlock(&f_, FILE_SIZE, sample_point[i], SAMPLE_LENGTH, &block_len);
         ParseBlock(schema, block, block_len);
         delete block;
     }
     std::vector<const ParsedTuple*> tuple_ptr;
     for (const auto& ptr : sampled_tuples_)
         tuple_ptr.push_back(ptr.get());
+    Logger::GetLogger() << "Unaccounted Char: " << unaccounted_char_ << "\n";
     double totalMDL = unaccounted_char_ * 8 + EvaluateTupleMDL(tuple_ptr, schema);
+    totalMDL += ToString(schema).length() * 8;
     return totalMDL;
 }
 
@@ -144,7 +147,16 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
             if (tuple->attr.back()->is_field)
                 attr_vec.push_back(tuple->attr.back()->value);
         mdl += EvaluateAttrMDL(attr_vec);
-        
+
+        // we also need to describe the array size
+        std::map<int, int> dict;
+        for (const ParsedTuple* tuple : tuples)
+            ++ dict[tuple->attr.size()];
+        std::vector<int> freq;
+        for (const auto& pair : dict)
+            freq.push_back(pair.second);
+        mdl += FrequencyToMDL(freq);
+
         // We also need to compare with restructure result
         if (mdl > mdl_struct) {
             std::unique_ptr<Schema> ptr(ArrayToStruct(schema, freq_size));
@@ -159,22 +171,27 @@ double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
     if (attr_vec.size() == 0) return 0;
     //Logger::GetLogger() << "Evaluating Attr MDL: <example: " << attr_vec[0] << ">\n";
     double mdl = CheckArbitraryLength(attr_vec), temp;
-    if (CheckEnum(attr_vec, &temp)) {
-        mdl = std::min(mdl, temp);
-        //Logger::GetLogger() << "Enum MDL = " << temp << "\n";
-    }
-    if (CheckInt(attr_vec, &temp)) {
-        mdl = std::min(mdl, temp);
-        //Logger::GetLogger() << "Int MDL = " << temp << "\n";
-    }
-    if (CheckDouble(attr_vec, &temp)) {
-        mdl = std::min(mdl, temp);
-        //Logger::GetLogger() << "Double MDL = " << temp << "\n";
-    }
-    if (CheckFixedLength(attr_vec, &temp)) {
-        mdl = std::min(mdl, temp);
-        //Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
-    }
+
+    // Check Enum
+    temp = CheckEnum(attr_vec);
+    mdl = std::min(mdl, temp);
+    //Logger::GetLogger() << "Enum MDL = " << temp << "\n";
+
+    // Check Int
+    temp = CheckInt(attr_vec);
+    mdl = std::min(mdl, temp);
+    //Logger::GetLogger() << "Int MDL = " << temp << "\n";
+
+    // Check Double
+    temp = CheckDouble(attr_vec);
+    mdl = std::min(mdl, temp);
+    //Logger::GetLogger() << "Double MDL = " << temp << "\n";
+
+    // Check Fixed Length
+    temp = CheckFixedLength(attr_vec);
+    mdl = std::min(mdl, temp);
+    //Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
+
     //Logger::GetLogger() << "MDL = " << mdl << "\n";
     return mdl;
 }

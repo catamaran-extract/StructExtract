@@ -21,14 +21,11 @@ private:
     std::vector<char> delimiter_;
     bool is_special_char_[256];
     const Schema* schema_;
-    const Schema* start_schema_;
 
     std::vector<MatchPoint> pointer_;
     bool lasting_field_;
 
     void GenerateSpecialChar(const Schema* schema);
-    void ExtractBuffer(std::vector<std::unique_ptr<ParsedTuple>>* buffer, 
-                       std::vector<std::unique_ptr<ParsedTuple>>* tmep, int len);
 public:
     SchemaMatch(const Schema* schema);
     void Reset();

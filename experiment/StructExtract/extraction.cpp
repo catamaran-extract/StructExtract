@@ -121,7 +121,7 @@ void Extraction::FlushOutput() {
             /*if (!skip_[j])*/ {
                 if (result.count(std::make_pair(j, i)) > 0)
                     fout_ << result[std::make_pair(j, i)];
-                fout_ << (j == mX ? '\n' : ',');
+                fout_ << (j == mX ? '\n' : '\t');
             }
     }
     output_.clear();

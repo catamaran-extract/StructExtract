@@ -4,28 +4,31 @@
 #include <string>
 #include <algorithm>
 
-bool CheckEnum(const std::vector<std::string>& attr_vec, double* mdl) {
+double CheckEnum(const std::vector<std::string>& attr_vec) {
     // Value to count mapping
     std::map<std::string, int> dict;
-    int outlier = 0;
+    dict["outlier_"] = 0;
+    double outlier_mdl = 0;
 
     for (const auto& attr : attr_vec)
         if (dict.count(attr) == 0) {
             if (dict.size() < 50)
                 dict[attr] = 1;
-            else
-                outlier++;
+            else {
+                outlier_mdl += (attr.length() + 1) * 8;
+                ++ dict["outlier_"];
+            }
         }
         else
             ++dict[attr];
 
-    if (outlier > attr_vec.size() * 0.05)
-        return false;
     std::vector<int> freq;
     for (const auto& pair : dict)
         freq.push_back(pair.second);
-    *mdl = FrequencyToMDL(freq);
-    return true;
+    int dictionary_size = 0;
+    for (const auto& pair : dict)
+        dictionary_size += (pair.first.length() + 1) * 8;
+    return FrequencyToMDL(freq) + outlier_mdl + dictionary_size;
 }
 
 bool ParseInt(const std::string& attr, int* v) {
@@ -52,10 +55,10 @@ bool ParseInt(const std::string& attr, int* v) {
     return true;
 }
 
-bool CheckInt(const std::vector<std::string>& attr_vec, double* mdl) {
+double CheckInt(const std::vector<std::string>& attr_vec) {
     // Minimum/Maximum Value
     int min_int_value = INT_MAX, max_int_value = -INT_MAX;
-    int outlier = 0;
+    double outlier_mdl = 0;
 
     for (const auto& attr : attr_vec) {
         int val;
@@ -64,14 +67,11 @@ bool CheckInt(const std::vector<std::string>& attr_vec, double* mdl) {
             max_int_value = std::max(max_int_value, val);
         }
         else
-            outlier++;
+            outlier_mdl += (attr.length() + 1) * 8;
     }
 
-    if (outlier > attr_vec.size() * 0.05)
-        return false;
     // Compute MDL for integer
-    *mdl = attr_vec.size() * log2(max_int_value - min_int_value + 1);
-    return true;
+    return attr_vec.size() * log2(max_int_value - min_int_value + 1) + outlier_mdl;
 }
 
 bool ParseDouble(const std::string& attr, double* v, int *precision) {
@@ -106,11 +106,11 @@ bool ParseDouble(const std::string& attr, double* v, int *precision) {
     return true;
 }
 
-bool CheckDouble(const std::vector<std::string>& attr_vec, double* mdl) {
+double CheckDouble(const std::vector<std::string>& attr_vec) {
     // Range and Precision
     double min_double = 1e10, max_double = -1e10;
     int double_precision = 0;
-    int outlier = 0;
+    double outlier_mdl = 0;
 
     for (const auto& attr : attr_vec) {
         double val;
@@ -121,25 +121,18 @@ bool CheckDouble(const std::vector<std::string>& attr_vec, double* mdl) {
             double_precision = std::max(precision, double_precision);
         }
         else
-            outlier++;
+            outlier_mdl += (attr.length() + 1) * 8;
     }
 
-    if (outlier > attr_vec.size() * 0.05)
-        return false;
-
-    // We treat min=max as special case to avoid numerical error
-    if (max_double <= min_double)
-        *mdl = 0;
-    else
-        *mdl = attr_vec.size() * (log2(max_double - min_double) + double_precision * log2(10));
-    return true;
+    double range = max_double - min_double + pow(10, -double_precision);
+    return attr_vec.size() * (log2(range) + double_precision * log2(10)) + outlier_mdl;
 }
 
-bool CheckFixedLength(const std::vector<std::string>& attr_vec, double* mdl) {
+double CheckFixedLength(const std::vector<std::string>& attr_vec) {
     // Positional Char Frequency
     std::vector<std::map<char, int>> fix_length_freq;
     int fix_length = -1;
-    int outlier = 0;
+    double outlier_mdl = 0;
 
     for (const auto& attr : attr_vec) {
         if (fix_length == -1) {
@@ -151,20 +144,17 @@ bool CheckFixedLength(const std::vector<std::string>& attr_vec, double* mdl) {
                 ++fix_length_freq[j][attr[j]];
         }
         else
-            outlier++;
+            outlier_mdl += (attr.length() + 1) * 8;
     }
 
-    if (outlier > attr_vec.size() * 0.05)
-        return false;
-
-    *mdl = 0;
+    double mdl = 0;
     for (int j = 0; j < fix_length; ++j) {
         std::vector<int> freq;
         for (const auto& pair : fix_length_freq[j])
             freq.push_back(pair.second);
-        *mdl += FrequencyToMDL(freq);
+        mdl += FrequencyToMDL(freq);
     }
-    return true;
+    return mdl + outlier_mdl;
 }
 
 double CheckArbitraryLength(const std::vector<std::string>& attr_vec) {

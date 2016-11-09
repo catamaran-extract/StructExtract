@@ -84,5 +84,13 @@ char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* blo
     fin->read(block, end - start);
     block[end - start] = 0;
     *block_len = end - start;
+    if (start == 0) {
+        char* new_block = new char[end - start + 2];
+        strcpy(new_block, "\n");
+        strcat(new_block, block);
+        ++ (*block_len);
+        delete block;
+        return new_block;
+    }
     return block;
 }
