@@ -13,34 +13,34 @@ Schema* ShiftSchema(const Schema* schema, const std::string& file_name) {
     std::unique_ptr<Schema> best_schema(CopySchema(schema));
     int earliest_match = 1000000;
     for (int i = 0; i < (int)schema->child.size(); ++i)
-    if (CheckEndOfLine(schema->child[i].get())) {
-        std::vector<std::unique_ptr<Schema>> schema_vec;
-        for (int j = i + 1; j < (int)schema->child.size(); ++j) {
-            std::unique_ptr<Schema> ptr(CopySchema(schema->child[j].get()));
-            schema_vec.push_back(std::move(ptr));
-        }
-        for (int j = 0; j <= i; ++j) {
-            std::unique_ptr<Schema> ptr(CopySchema(schema->child[j].get()));
-            schema_vec.push_back(std::move(ptr));
-        }
-        std::unique_ptr<Schema> shifted_schema(Schema::CreateStruct(&schema_vec));
-        SchemaMatch schema_match(shifted_schema.get());
-
-        std::ifstream fin(file_name);
-        char c;
-        int pos = 0;
-        while (fin.get(c)) {
-            ++ pos;
-            schema_match.FeedChar(c);
-
-            if (schema_match.TupleAvailable()) {
-                earliest_match = pos;
-                best_schema.reset(shifted_schema.release());
+        if (CheckEndOfLine(schema->child[i].get())) {
+            std::vector<std::unique_ptr<Schema>> schema_vec;
+            for (int j = i + 1; j < (int)schema->child.size(); ++j) {
+                std::unique_ptr<Schema> ptr(CopySchema(schema->child[j].get()));
+                schema_vec.push_back(std::move(ptr));
             }
-            if (pos >= earliest_match) 
-                break;
+            for (int j = 0; j <= i; ++j) {
+                std::unique_ptr<Schema> ptr(CopySchema(schema->child[j].get()));
+                schema_vec.push_back(std::move(ptr));
+            }
+            std::unique_ptr<Schema> shifted_schema(Schema::CreateStruct(&schema_vec));
+            SchemaMatch schema_match(shifted_schema.get());
+
+            std::ifstream fin(file_name);
+            char c;
+            int pos = 0;
+            while (fin.get(c)) {
+                ++pos;
+                schema_match.FeedChar(c);
+
+                if (schema_match.TupleAvailable()) {
+                    earliest_match = pos;
+                    best_schema.reset(shifted_schema.release());
+                }
+                if (pos >= earliest_match)
+                    break;
+            }
         }
-    }
     return best_schema.release();
 }
 
@@ -79,8 +79,8 @@ int main(int argc, char** argv)
     // Storing the input file directory, buffer files will store the remaining unextracted parts
     std::string input_file(argv[1]);
     std::string output_prefix(argv[2]);
-    std::string buffer_prefix("temp"); 
-    
+    std::string buffer_prefix("temp");
+
     bool finished_extracting = false;
     int iteration = 0, file_size = -1;
     while (!finished_extracting) {
@@ -104,15 +104,6 @@ int main(int argc, char** argv)
         bool generated_filter = false;
         while (!extract.EndOfFile()) {
             extract.ExtractNextTuple();
-            if (!generated_filter && extract.GetNumOfTuple() > 1000) {
-                extract.GenerateFilter();
-                generated_filter = true;
-            }
-            if (generated_filter)
-                extract.FlushOutput();
-        }
-        if (!generated_filter) {
-            extract.GenerateFilter();
             extract.FlushOutput();
         }
 

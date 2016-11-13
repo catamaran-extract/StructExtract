@@ -24,7 +24,7 @@ void CandidateGen::ComputeCandidate() {
     bool is_special_char[256];
     memset(is_special_char, false, sizeof(is_special_char));
     is_special_char[(unsigned char)'\n'] = true;
-    
+
     while (1) {
         char next_special_char = -1;
         double next_branch_top_metric = 0;
@@ -61,7 +61,7 @@ void CandidateGen::ComputeCandidate() {
         for (CandidateSchema& schema : next_branch_schema)
             candidate_schema_.push_back(
                 CandidateSchema(
-                    schema.schema.release(), 
+                    schema.schema.release(),
                     schema.coverage,
                     schema.all_char_coverage
                 )
@@ -170,33 +170,33 @@ void CandidateGen::ExtractCandidate(const std::string& buffer, const std::map<in
     ExtractSchema(schema_ptr.get(), cov, hash_coverage, hash_schema);
 }
 
-void CandidateGen::EstimateHash(const Schema* schema, const std::vector<int>& coverage, 
+void CandidateGen::EstimateHash(const Schema* schema, const std::vector<int>& coverage,
     std::map<int, double>* hash_coverage) {
     //Logger::GetLogger() << "Estimating Hash: " << ToString(schema) << "\n";
     // This is to avoid multiple coverage count
     std::map<int, int> last_match;
     int child_size = schema->child.size();
-    
+
     std::vector<bool> end_of_line(child_size, false);
     for (int i = 0; i < child_size; ++i)
         end_of_line[i] = CheckEndOfLine(schema->child[i].get());
 
     for (int i = 0; i < child_size; ++i)
-    if (end_of_line[i]) {
-        int hash = 0, cov = 0;
-        for (int j = i + 1; j < child_size; ++j) {
-            hash = HashValue(hash, schema->child[j].get(), MOD_A);
-            cov += coverage[j];
-            if (end_of_line[j])
-                if (last_match[hash] <= i) {
-                    last_match[hash] = j;
-                    (*hash_coverage)[hash] += cov;
-                }
+        if (end_of_line[i]) {
+            int hash = 0, cov = 0;
+            for (int j = i + 1; j < child_size; ++j) {
+                hash = HashValue(hash, schema->child[j].get(), MOD_A);
+                cov += coverage[j];
+                if (end_of_line[j])
+                    if (last_match[hash] <= i) {
+                        last_match[hash] = j;
+                        (*hash_coverage)[hash] += cov;
+                    }
+            }
         }
-    }
 }
 
-void CandidateGen::ExtractSchema(const Schema* schema, const std::vector<int>& coverage, 
+void CandidateGen::ExtractSchema(const Schema* schema, const std::vector<int>& coverage,
     const std::map<int, double>& hash_coverage, std::map<int, CandidateSchema>* hash_schema) {
     // This is to avoid multiple coverage count
     std::map<int, int> last_match;
@@ -207,29 +207,29 @@ void CandidateGen::ExtractSchema(const Schema* schema, const std::vector<int>& c
         end_of_line[i] = CheckEndOfLine(schema->child[i].get());
 
     for (int i = 0; i < child_size; ++i)
-    if (end_of_line[i]) {
-        int hashA = 0, hashB = 0, cov = 0;
-        for (int j = i + 1; j < child_size; ++j) {
-            hashA = HashValue(hashA, schema->child[j].get(), MOD_A);
-            hashB = HashValue(hashB, schema->child[j].get(), MOD_B);
-            cov += coverage[j];
-            if (end_of_line[j] && hash_coverage.at(hashA) > 0.1) {
-                if (hash_schema->count(hashB) == 0) {
-                    std::vector<std::unique_ptr<Schema>> vec;
-                    for (int k = i + 1; k <= j; ++k) {
-                        std::unique_ptr<Schema> ptr(CopySchema(schema->child[k].get()));
-                        vec.push_back(std::move(ptr));
+        if (end_of_line[i]) {
+            int hashA = 0, hashB = 0, cov = 0;
+            for (int j = i + 1; j < child_size; ++j) {
+                hashA = HashValue(hashA, schema->child[j].get(), MOD_A);
+                hashB = HashValue(hashB, schema->child[j].get(), MOD_B);
+                cov += coverage[j];
+                if (end_of_line[j] && hash_coverage.at(hashA) > 0.1) {
+                    if (hash_schema->count(hashB) == 0) {
+                        std::vector<std::unique_ptr<Schema>> vec;
+                        for (int k = i + 1; k <= j; ++k) {
+                            std::unique_ptr<Schema> ptr(CopySchema(schema->child[k].get()));
+                            vec.push_back(std::move(ptr));
+                        }
+                        (*hash_schema)[hashB].coverage = cov;
+                        (*hash_schema)[hashB].schema.reset(Schema::CreateStruct(&vec));
                     }
-                    (*hash_schema)[hashB].coverage = cov;
-                    (*hash_schema)[hashB].schema.reset(Schema::CreateStruct(&vec));
-                }
-                else if (last_match[hashB] <= i) {
-                    last_match[hashB] = j;
-                    hash_schema->at(hashB).coverage += cov;
+                    else if (last_match[hashB] <= i) {
+                        last_match[hashB] = j;
+                        hash_schema->at(hashB).coverage += cov;
+                    }
                 }
             }
         }
-    }
 }
 
 void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
@@ -249,7 +249,7 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
 
         buffer = SampleBlock(&f_, file_size_, sample_point[i], SAMPLE_SPAN, &buffer_size);
         for (int j = 0; j < buffer_size; ++j)
-            ++ cnt[buffer[j]];
+            ++cnt[buffer[j]];
         total_size += buffer_size;
     }
 

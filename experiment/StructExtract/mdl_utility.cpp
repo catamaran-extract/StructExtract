@@ -1,4 +1,5 @@
 #include "mdl_utility.h"
+#include "logger.h"
 
 #include <map>
 #include <string>
@@ -16,7 +17,7 @@ double CheckEnum(const std::vector<std::string>& attr_vec) {
                 dict[attr] = 1;
             else {
                 outlier_mdl += (attr.length() + 1) * 8;
-                ++ dict["outlier_"];
+                ++dict["outlier_"];
             }
         }
         else
@@ -91,7 +92,7 @@ bool ParseDouble(const std::string& attr, double* v, int *precision) {
             ++dot_cnt;
         else if (attr[j] >= '0' && attr[j] <= '9') {
             if (dot_cnt == 1) {
-                precision++;
+                (*precision)++;
                 fractional = fractional * 10 + attr[j] - '0';
             }
             else
@@ -176,6 +177,7 @@ double CheckArbitraryLength(const std::vector<std::string>& attr_vec) {
 double FrequencyToMDL(const std::vector<int>& vec) {
     double sum = 0, total = 0;
     for (int num : vec) {
+        if (num == 0) continue;
         sum += num * log2(num);
         total += num;
     }

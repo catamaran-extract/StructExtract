@@ -11,7 +11,7 @@
 //      input_file : the file to be extracted
 //      buffer_file : the output file for unmatched parts of the input
 //      schema : the schema string
-Extraction::Extraction(const std::string& input_file, const std::string& output_file, 
+Extraction::Extraction(const std::string& input_file, const std::string& output_file,
     const std::string& buffer_file, const Schema* extract_schema) :
     fbuffer_size_(0),
     end_of_file_(false),
@@ -60,7 +60,7 @@ Extraction::~Extraction() {
     fbuffer_.close();
 }
 
-void Extraction::FormatTuple(const ParsedTuple* tuple, 
+void Extraction::FormatTuple(const ParsedTuple* tuple,
     std::map<std::pair<int, int>, std::string>* result, int curX, int curY, int* maxX, int* maxY) {
     if (tuple->is_field) {
         (*result)[std::make_pair(curX, curY)] = tuple->value;
@@ -88,37 +88,13 @@ void Extraction::FormatTuple(const ParsedTuple* tuple,
     }
 }
 
-void Extraction::GenerateFilter() {
-    int mX = 0, mY = 0;
-    std::map<std::pair<int, int>, std::string> result;
-    std::vector<std::set<std::string>> set_vec;
-    for (const auto& ptr : output_) {
-        result.clear();
-        FormatTuple(ptr.get(), &result, 0, 0, &mX, &mY);
-        if (mX >= (int)set_vec.size())
-            set_vec.resize(mX + 1);
-        for (const auto& pair : result)
-            set_vec[pair.first.first].insert(pair.second);
-    }
-    skip_.clear();
-    for (const auto& set : set_vec)
-        if (set.size() > 1)
-            skip_.push_back(false);
-        else
-            skip_.push_back(true);
-    Logger::GetLogger() << "Generated Filter:\n";
-    for (int i = 0; i <= mX; ++i)
-        Logger::GetLogger() << skip_[i] << (i == mX ? '\n' : ' ');
-}
-
 void Extraction::FlushOutput() {
     for (const auto& ptr : output_) {
         int mX = 0, mY = 0;
         std::map<std::pair<int, int>, std::string> result;
         FormatTuple(ptr.get(), &result, 0, 0, &mX, &mY);
         for (int i = 0; i <= mY; ++i)
-            for (int j = 0; j <= mX; ++j) 
-            /*if (!skip_[j])*/ {
+            for (int j = 0; j <= mX; ++j) {
                 if (result.count(std::make_pair(j, i)) > 0)
                     fout_ << result[std::make_pair(j, i)];
                 fout_ << (j == mX ? '\n' : '\t');

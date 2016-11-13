@@ -214,7 +214,7 @@ void CopySchema(const Schema* source, Schema* target) {
 Schema* ArrayToStruct(const Schema* schema, int repeat_time) {
     std::vector<std::unique_ptr<Schema>> schema_vec;
 
-    for (int i = 0; i < repeat_time; ++i) {
+    for (int i = 0; i < std::abs(repeat_time); ++i) {
         for (const auto& child : schema->child) {
             std::unique_ptr<Schema> ptr(CopySchema(child.get()));
             schema_vec.push_back(std::move(ptr));
@@ -225,6 +225,28 @@ Schema* ArrayToStruct(const Schema* schema, int repeat_time) {
         schema_vec.push_back(std::move(ptr));
     }
     return Schema::CreateStruct(&schema_vec);
+}
+
+Schema* ExpandArray(const Schema* schema, int expand_size) {
+    if (expand_size == 0)
+        return CopySchema(schema);
+    std::vector<std::unique_ptr<Schema>> schema_vec;
+
+    for (int i = 0; i < expand_size; ++i) {
+        for (const auto& child : schema->child) {
+            std::unique_ptr<Schema> ptr(CopySchema(child.get()));
+            schema_vec.push_back(std::move(ptr));
+        }
+
+        char delimiter = schema->return_char;
+        std::unique_ptr<Schema> ptr(Schema::CreateChar(delimiter));
+        schema_vec.push_back(std::move(ptr));
+    }
+
+    std::unique_ptr<Schema> ptr(CopySchema(schema));
+    schema_vec.push_back(std::move(ptr));
+    return Schema::CreateStruct(&schema_vec);
+
 }
 
 int FieldCount(const Schema* schema) {

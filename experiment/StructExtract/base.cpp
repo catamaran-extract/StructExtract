@@ -10,8 +10,8 @@ Schema* Schema::CreateChar(char delimiter) {
     return schema;
 }
 
-Schema* Schema::CreateArray(std::vector<std::unique_ptr<Schema>>* vec, 
-                            char return_char, char terminate_char) {
+Schema* Schema::CreateArray(std::vector<std::unique_ptr<Schema>>* vec,
+    char return_char, char terminate_char) {
     Schema* schema = new Schema();
     schema->is_array = true;
     schema->return_char = return_char;
@@ -88,7 +88,7 @@ char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* blo
         char* new_block = new char[end - start + 2];
         strcpy(new_block, "\n");
         strcat(new_block, block);
-        ++ (*block_len);
+        ++(*block_len);
         delete block;
         return new_block;
     }

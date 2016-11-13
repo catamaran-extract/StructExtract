@@ -36,7 +36,7 @@ private:
     static void ExtractCandidate(const std::string& buffer, const std::map<int, double>& hash_coverage,
         std::map<int, CandidateSchema>* hash_schema);
     static void EstimateHash(const Schema* schema, const std::vector<int>& cov, std::map<int, double>* hash_coverage);
-    static void ExtractSchema(const Schema* schema, const std::vector<int>& cov, 
+    static void ExtractSchema(const Schema* schema, const std::vector<int>& cov,
         const std::map<int, double>& hash_coverage, std::map<int, CandidateSchema>* hash_schema);
 
     char* RetrieveBlock(int pos, int* block_len);
