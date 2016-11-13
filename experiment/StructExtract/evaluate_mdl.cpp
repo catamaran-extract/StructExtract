@@ -11,7 +11,14 @@
 
 EvaluateMDL::EvaluateMDL(const std::string& filename) :
     FILE_SIZE(GetFileSize(filename)),
-    SAMPLE_POINTS(std::min(std::max(FILE_SIZE / SAMPLE_LENGTH, 1), 50)) {
+    SAMPLE_LENGTH(20000) {
+    if (FILE_SIZE / SAMPLE_LENGTH < 1)
+        SAMPLE_POINTS = 1;
+    else if (FILE_SIZE / SAMPLE_LENGTH > 50)
+        SAMPLE_POINTS = 50;
+    else
+        SAMPLE_POINTS = FILE_SIZE / SAMPLE_LENGTH;
+    Logger::GetLogger() << "INFO: " << FILE_SIZE << " " << SAMPLE_LENGTH << " " << SAMPLE_POINTS << "\n";
     f_.open(filename, std::ios::binary);
 }
 

@@ -45,7 +45,7 @@ struct ParsedTuple {
     static ParsedTuple* CreateStruct(std::vector<std::unique_ptr<ParsedTuple>>* vec);
 };
 
-const char separator_char[] = {',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','#'};
+const char separator_char[] = { ',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','#' };
 const int separator_char_size = sizeof(separator_char) / sizeof(char);
 
 const char field_char = 'F';
