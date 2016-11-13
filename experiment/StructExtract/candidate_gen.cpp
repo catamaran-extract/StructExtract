@@ -253,9 +253,17 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
         total_size += buffer_size;
     }
 
-    for (int i = 0; i < separator_char_size; ++i)
-        if (cnt[separator_char[i]] > 0.01 * total_size)
-            special_char->push_back(separator_char[i]);
+    double rate = 0.01;
+    while (1) {
+        special_char->clear();
+        for (int i = 0; i < separator_char_size; ++i)
+            if (cnt[separator_char[i]] > rate * total_size)
+                special_char->push_back(separator_char[i]);
+        if (special_char->size() > 0)
+            break;
+        else
+            rate *= 0.1;
+    }
 }
 
 char* CandidateGen::RetrieveBlock(int pos, int* block_len) {
