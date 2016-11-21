@@ -278,7 +278,7 @@ char* CandidateGen::RetrieveBlock(int pos, int* block_len) {
         for (int i = 0; i < *block_len; ++i)
             if (buffer[i] == '\n')
                 ++cnt;
-        if (cnt >= EXPAND_RANGE * 2)
+        if (cnt >= EXPAND_RANGE * 2 || seek_len >= file_size_ / 2)
             break;
         else
             delete buffer;
