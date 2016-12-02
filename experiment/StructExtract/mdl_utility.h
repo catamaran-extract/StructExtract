@@ -5,6 +5,7 @@
 double CheckEnum(const std::vector<std::string>& attr_vec);
 double CheckInt(const std::vector<std::string>& attr_vec);
 double CheckDouble(const std::vector<std::string>& attr_vec);
+double CheckNormal(const std::vector<std::string>& attr_vec);
 double CheckFixedLength(const std::vector<std::string>& attr_vec);
 double CheckArbitraryLength(const std::vector<std::string>& attr_vec);
 

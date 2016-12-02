@@ -126,7 +126,36 @@ double CheckDouble(const std::vector<std::string>& attr_vec) {
     }
 
     double range = max_double - min_double + pow(10, -double_precision);
+    if (range < 0) return 1e10;
     return attr_vec.size() * (log2(range) + double_precision * log2(10)) + outlier_mdl;
+}
+
+double CheckNormal(const std::vector<std::string>& attr_vec) {
+    // Sum and Variance
+    double mean = 0, variance = 0;
+    int count = 0;
+    int double_precision = 0;
+    double outlier_mdl = 0;
+
+    for (const auto& attr : attr_vec) {
+        double val;
+        int precision;
+        if (ParseDouble(attr, &val, &precision)) {
+            mean += val;
+            variance += val * val;
+            count++;
+            double_precision = std::max(precision, double_precision);
+        }
+        else
+            outlier_mdl += (attr.length() + 1) * 8;
+    }
+    mean /= count;
+    variance = variance / count - mean * mean;
+    if (variance < pow(10, -2 * double_precision))
+        variance = pow(10, -2 * double_precision);
+
+    if (count == 0) return 1e10;
+    return attr_vec.size() * (log2(sqrt(2 * 3.1416 * variance)) + log2(exp(1)) * 0.5 + double_precision * log2(10)) + outlier_mdl;
 }
 
 double CheckFixedLength(const std::vector<std::string>& attr_vec) {

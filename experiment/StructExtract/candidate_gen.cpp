@@ -14,12 +14,7 @@ CandidateGen::CandidateGen(const std::string& filename) {
     f_.open(filename, std::ios::binary);
 }
 
-void CandidateGen::ComputeCandidate() {
-    candidate_schema_.clear();
-
-    std::vector<char> candidate_special_char;
-    FilterSpecialChar(&candidate_special_char);
-
+void CandidateGen::GreedySearch(const std::vector<char>& candidate_special_char) {
     // We initialize the special character lookup table here
     bool is_special_char[256];
     memset(is_special_char, false, sizeof(is_special_char));
@@ -44,7 +39,7 @@ void CandidateGen::ComputeCandidate() {
                     for (const auto& candidate : schema_vec) {
                         Logger::GetLogger() << "Schema: " << ToString(candidate.schema.get()) << "\n";
                         Logger::GetLogger() << "Coverage: " << candidate.coverage << "\n";
-                        Logger::GetLogger() << "All Special Char Coverage: " << candidate.all_char_coverage << "\n";
+                        Logger::GetLogger() << "Non-Field Coverage: " << candidate.all_char_coverage << "\n";
                         if (++cnt == 5) break;
                     }
                     if (schema_vec[0].coverage * schema_vec[0].all_char_coverage > next_branch_top_metric) {
@@ -64,9 +59,64 @@ void CandidateGen::ComputeCandidate() {
                     schema.schema.release(),
                     schema.coverage,
                     schema.all_char_coverage
-                )
-            );
+                    )
+                );
     }
+}
+
+void CandidateGen::ExhaustiveSearch(const std::vector<char>& candidate_special_char) {
+    // We initialize the special character lookup table here
+    bool is_special_char[256];
+    memset(is_special_char, false, sizeof(is_special_char));
+    is_special_char[(unsigned char)'\n'] = true;
+
+    std::vector<char> candidate_exclude_eol;
+    for (char c : candidate_special_char)
+        if (c != '\n') candidate_exclude_eol.push_back(c);
+
+    int special_char_card = candidate_exclude_eol.size();
+    for (int i = 1; i < (1 << special_char_card); ++i) {
+        for (int j = 0; j < special_char_card; ++j)
+            if ((i & (1 << j)) > 0)
+                is_special_char[candidate_exclude_eol[j]] = true;
+            else
+                is_special_char[candidate_exclude_eol[j]] = false;
+
+        std::vector<CandidateSchema> schema_vec;
+        EvaluateSpecialCharSet(is_special_char, candidate_special_char, &schema_vec);
+
+        if (schema_vec.size() != 0) {
+            sort(schema_vec.begin(), schema_vec.end());
+            Logger::GetLogger() << "Discovered " << schema_vec.size() << " Schemas:\n";
+            int cnt = 0;
+            for (const auto& candidate : schema_vec) {
+                Logger::GetLogger() << "Schema: " << ToString(candidate.schema.get()) << "\n";
+                Logger::GetLogger() << "Coverage: " << candidate.coverage << "\n";
+                Logger::GetLogger() << "Non-Field Coverage: " << candidate.all_char_coverage << "\n";
+                if (++cnt == 5) break;
+            }
+        }
+
+        for (CandidateSchema& schema : schema_vec)
+            candidate_schema_.push_back(
+                CandidateSchema(
+                    schema.schema.release(),
+                    schema.coverage,
+                    schema.all_char_coverage
+                    )
+                );
+    }
+}
+
+void CandidateGen::ComputeCandidate() {
+    candidate_schema_.clear();
+
+    std::vector<char> candidate_special_char;
+    FilterSpecialChar(&candidate_special_char);
+
+    //GreedySearch(candidate_special_char);
+    ExhaustiveSearch(candidate_special_char);
+
     sort(candidate_schema_.begin(), candidate_schema_.end());
     for (int i = 0; i < std::min((int)candidate_schema_.size(), 50); ++i) {
         Logger::GetLogger() << "Candidate Schema #" << i << ": " << ToString(candidate_schema_[i].schema.get()) << "\n";

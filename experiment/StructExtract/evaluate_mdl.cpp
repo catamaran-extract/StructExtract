@@ -194,6 +194,11 @@ double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
     mdl = std::min(mdl, temp);
     //Logger::GetLogger() << "Double MDL = " << temp << "\n";
 
+    // Check Normal
+    //temp = CheckNormal(attr_vec);
+    //mdl = std::min(mdl, temp);
+    //Logger::GetLogger() << "Normal MDL = " << temp << "\n";
+
     // Check Fixed Length
     temp = CheckFixedLength(attr_vec);
     mdl = std::min(mdl, temp);

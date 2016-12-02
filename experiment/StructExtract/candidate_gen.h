@@ -32,6 +32,8 @@ private:
     void FilterSpecialChar(std::vector<char>* special_char);
     void EvaluateSpecialCharSet(bool is_special_char[256], const std::vector<char>& candidate_special_char,
         std::vector<CandidateSchema>* schema_vec);
+    void GreedySearch(const std::vector<char>& candidate_special_char);
+    void ExhaustiveSearch(const std::vector<char>& candidate_special_char);
     static void EstimateHashCoverage(const std::string& buffer, std::map<int, double>* hash_coverage);
     static void ExtractCandidate(const std::string& buffer, const std::map<int, double>& hash_coverage,
         std::map<int, CandidateSchema>* hash_schema);
