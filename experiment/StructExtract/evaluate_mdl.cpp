@@ -11,13 +11,8 @@
 
 EvaluateMDL::EvaluateMDL(const std::string& filename) :
     FILE_SIZE(GetFileSize(filename)),
-    SAMPLE_LENGTH(20000) {
-    if (FILE_SIZE / SAMPLE_LENGTH < 1)
-        SAMPLE_POINTS = 1;
-    else if (FILE_SIZE / SAMPLE_LENGTH > 50)
-        SAMPLE_POINTS = 50;
-    else
-        SAMPLE_POINTS = FILE_SIZE / SAMPLE_LENGTH;
+    SAMPLE_LENGTH(20000),
+    SAMPLE_POINTS(std::min(std::max(1, FILE_SIZE / SAMPLE_LENGTH), 50)) {
     Logger::GetLogger() << "INFO: " << FILE_SIZE << " " << SAMPLE_LENGTH << " " << SAMPLE_POINTS << "\n";
     f_.open(filename, std::ios::binary);
 }
@@ -109,6 +104,7 @@ double EvaluateMDL::RestructureMDL(const std::vector<const ParsedTuple*>& tuples
             for (int j = i; j < (int)tuple->attr.size(); ++j)
                 array_tuple_vec.push_back(tuple->attr[j].get());
         double array_mdl = EvaluateArrayTupleMDL(array_tuple_vec, schema);
+        //Logger::GetLogger() << "Array: " << array_mdl << ", Struct: " << partial_struct_mdl << ", Trivial: " << trivial_mdl << "\n";
         if (array_mdl + partial_struct_mdl + trivial_mdl < mdl) {
             mdl = array_mdl + partial_struct_mdl + trivial_mdl;
             *expand_size = i;
@@ -176,8 +172,8 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
 
 double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
     if (attr_vec.size() == 0) return 0;
-    //Logger::GetLogger() << "Evaluating Attr MDL: <example: " << attr_vec[0] << ">\n";
-    double mdl = CheckArbitraryLength(attr_vec), temp;
+    //Logger::GetLogger() << "Evaluating Attr MDL: <example: " << attr_vec[0] << "> <size: " << attr_vec.size() << ">\n";
+    double mdl = CheckTrivial(attr_vec), temp;
 
     // Check Enum
     temp = CheckEnum(attr_vec);
@@ -200,8 +196,13 @@ double EvaluateMDL::EvaluateAttrMDL(const std::vector<std::string>& attr_vec) {
     //Logger::GetLogger() << "Normal MDL = " << temp << "\n";
 
     // Check Fixed Length
-    temp = CheckFixedLength(attr_vec);
-    mdl = std::min(mdl, temp);
+    //temp = CheckFixedLength(attr_vec);
+    //mdl = std::min(mdl, temp);
+    //Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
+
+    // Check Arbitrary Length
+    //temp = CheckArbitraryLength(attr_vec);
+    //mdl = std::min(mdl, temp);
     //Logger::GetLogger() << "Fixed MDL = " << temp << "\n";
 
     //Logger::GetLogger() << "MDL = " << mdl << "\n";

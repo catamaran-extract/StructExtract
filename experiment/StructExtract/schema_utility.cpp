@@ -1,6 +1,10 @@
 #include "schema_utility.h"
+#include "schema_match.h"
 #include <set>
 #include <algorithm>
+#include <string>
+
+#include "logger.h"
 
 bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
     std::vector<int>* start_pos, std::vector<int>* end_pos) {
@@ -176,6 +180,50 @@ bool CheckEqual(const Schema* schemaA, const Schema* schemaB) {
     for (int i = 0; i < (int)schemaA->child.size(); ++i)
         if (!CheckEqual(schemaA->child[i].get(), schemaB->child[i].get()))
             return false;
+    return true;
+}
+
+std::string GenerateSampleRecord(const Schema* schema, int rep) {
+    if (schema == nullptr)
+        return "nullptr";
+    if (schema->is_char)
+        return std::string(1, schema->delimiter);
+    std::string struct_str = "";
+    for (const auto& ptr : schema->child)
+        struct_str += GenerateSampleRecord(ptr.get(), rep);
+    if (schema->is_array) {
+        std::string ret = "";
+        for (int i = 0; i < rep - 1; ++i)
+            ret += struct_str + std::string(1, schema->return_char);
+        ret += struct_str + std::string(1, schema->terminate_char);
+        return ret;
+    } else
+        return struct_str;
+}
+
+int CountEOL(const Schema* schema) {
+    std::string str = GenerateSampleRecord(schema, 1);
+    int cnt = 0;
+    for (char c : str)
+        if (c == '\n') cnt++;
+    return cnt;
+}
+
+bool CheckExpandResult(const Schema* source, const Schema* target) {
+    if (CountEOL(source) != CountEOL(target)) 
+        return false;
+    if (CheckEqual(source, target))
+        return false;
+    SchemaMatch schema_match(source);
+    for (int rep = 2; rep <= 4; ++rep) {
+        std::string str = GenerateSampleRecord(target, rep);
+        schema_match.Reset();
+        for (char c : str) {
+            if (schema_match.TupleAvailable()) return false;
+            schema_match.FeedChar(c);
+        }
+        if (!schema_match.TupleAvailable()) return false;
+    }
     return true;
 }
 

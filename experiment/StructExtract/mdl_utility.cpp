@@ -8,27 +8,27 @@
 double CheckEnum(const std::vector<std::string>& attr_vec) {
     // Value to count mapping
     std::map<std::string, int> dict;
-    dict["outlier_"] = 0;
+    int outlier_cnt = 0;
     double outlier_mdl = 0;
 
     for (const auto& attr : attr_vec)
-        if (dict.count(attr) == 0) {
-            if (dict.size() < 50)
-                dict[attr] = 1;
-            else {
-                outlier_mdl += (attr.length() + 1) * 8;
-                ++dict["outlier_"];
-            }
-        }
+        if (dict.count(attr) == 0)
+            dict[attr] = 1;
         else
             ++dict[attr];
 
+    int dictionary_size = 0;
     std::vector<int> freq;
     for (const auto& pair : dict)
-        freq.push_back(pair.second);
-    int dictionary_size = 0;
-    for (const auto& pair : dict)
-        dictionary_size += (pair.first.length() + 1) * 8;
+        if (pair.second > (int)attr_vec.size() / 20) {
+            freq.push_back(pair.second);
+            dictionary_size += (pair.first.length() + 1) * 8;
+        } else {
+            outlier_mdl += (pair.first.length() + 1) * 8 * pair.second;
+            outlier_cnt += pair.second;
+        }
+    freq.push_back(outlier_cnt);
+
     return FrequencyToMDL(freq) + outlier_mdl + dictionary_size;
 }
 
@@ -201,6 +201,13 @@ double CheckArbitraryLength(const std::vector<std::string>& attr_vec) {
     for (const auto& pair : char_freq)
         freq.push_back(pair.second);
     return FrequencyToMDL(freq);
+}
+
+double CheckTrivial(const std::vector<std::string>& attr_vec) {
+    double ret = 0;
+    for (const auto& attr : attr_vec)
+        ret += (attr.length() + 1) * 8;
+    return ret;
 }
 
 double FrequencyToMDL(const std::vector<int>& vec) {

@@ -9,8 +9,10 @@
 #include <algorithm>
 #include <set>
 
-CandidateGen::CandidateGen(const std::string& filename) {
-    file_size_ = GetFileSize(filename);
+CandidateGen::CandidateGen(const std::string& filename) :
+    FILE_SIZE(GetFileSize(filename)),
+    SAMPLE_LENGTH(5000),
+    SAMPLE_POINTS(std::min(std::max(1, FILE_SIZE / SAMPLE_LENGTH), 20)) {
     f_.open(filename, std::ios::binary);
 }
 
@@ -128,7 +130,7 @@ void CandidateGen::ComputeCandidate() {
 void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::vector<char>& candidate_special_char,
     std::vector<CandidateSchema>* schema_vec) {
     std::default_random_engine gen;
-    std::uniform_int_distribution<int> dist(0, file_size_);
+    std::uniform_int_distribution<int> dist(0, FILE_SIZE);
 
     std::vector<int> sample_point;
     for (int i = 0; i < SAMPLE_POINTS; ++i)
@@ -147,7 +149,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
         double total_all_char_size = 0;
         for (int i = 0; i < SAMPLE_POINTS; ++i) {
             char* raw_buffer; int buffer_len;
-            raw_buffer = RetrieveBlock(sample_point[i], &buffer_len);
+            raw_buffer = SampleBlock(&f_, FILE_SIZE, sample_point[i], SAMPLE_LENGTH, &buffer_len);
 
             // For each sampled block, we update hash coverage
             if (raw_buffer == nullptr)
@@ -202,6 +204,13 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
                 )
             );
         }
+
+    for (auto& candidate : *schema_vec)
+        for (const auto& st : *schema_vec) 
+            if (CheckExpandResult(candidate.schema.get(), st.schema.get())) {
+                candidate.all_char_coverage += st.all_char_coverage;
+                candidate.coverage += st.coverage;
+            }
 }
 
 void CandidateGen::EstimateHashCoverage(const std::string& buffer,
@@ -233,15 +242,19 @@ void CandidateGen::EstimateHash(const Schema* schema, const std::vector<int>& co
 
     for (int i = 0; i < child_size; ++i)
         if (end_of_line[i]) {
-            int hash = 0, cov = 0;
+            int hash = 0, cov = 0, span = 0;
             for (int j = i + 1; j < child_size; ++j) {
                 hash = HashValue(hash, schema->child[j].get(), MOD_A);
                 cov += coverage[j];
-                if (end_of_line[j])
+                if (end_of_line[j]) {
+                    ++span;
                     if (last_match[hash] <= i) {
                         last_match[hash] = j;
                         (*hash_coverage)[hash] += cov;
                     }
+                }
+                if (span >= SPAN_LIMIT)
+                    break;
             }
         }
 }
@@ -258,34 +271,38 @@ void CandidateGen::ExtractSchema(const Schema* schema, const std::vector<int>& c
 
     for (int i = 0; i < child_size; ++i)
         if (end_of_line[i]) {
-            int hashA = 0, hashB = 0, cov = 0;
+            int hashA = 0, hashB = 0, cov = 0, span = 0;
             for (int j = i + 1; j < child_size; ++j) {
                 hashA = HashValue(hashA, schema->child[j].get(), MOD_A);
                 hashB = HashValue(hashB, schema->child[j].get(), MOD_B);
                 cov += coverage[j];
-                if (end_of_line[j] && hash_coverage.at(hashA) > 0.1) {
-                    if (hash_schema->count(hashB) == 0) {
-                        std::vector<std::unique_ptr<Schema>> vec;
-                        for (int k = i + 1; k <= j; ++k) {
-                            std::unique_ptr<Schema> ptr(CopySchema(schema->child[k].get()));
-                            vec.push_back(std::move(ptr));
+                if (end_of_line[j]) {
+                    ++span;
+                    if (hash_coverage.at(hashA) > 0.1) {
+                        if (hash_schema->count(hashB) == 0) {
+                            std::vector<std::unique_ptr<Schema>> vec;
+                            for (int k = i + 1; k <= j; ++k) {
+                                std::unique_ptr<Schema> ptr(CopySchema(schema->child[k].get()));
+                                vec.push_back(std::move(ptr));
+                            }
+                            (*hash_schema)[hashB].coverage = cov;
+                            (*hash_schema)[hashB].schema.reset(Schema::CreateStruct(&vec));
                         }
-                        (*hash_schema)[hashB].coverage = cov;
-                        (*hash_schema)[hashB].schema.reset(Schema::CreateStruct(&vec));
-                    }
-                    else if (last_match[hashB] <= i) {
-                        last_match[hashB] = j;
-                        hash_schema->at(hashB).coverage += cov;
+                        else if (last_match[hashB] <= i) {
+                            last_match[hashB] = j;
+                            hash_schema->at(hashB).coverage += cov;
+                        }
                     }
                 }
+                if (span >= SPAN_LIMIT)
+                    break;
             }
         }
 }
 
 void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
-    const int SAMPLE_SPAN = 1000;
     std::default_random_engine gen;
-    std::uniform_int_distribution<int> dist(0, file_size_);
+    std::uniform_int_distribution<int> dist(0, FILE_SIZE);
 
     std::vector<int> sample_point;
     for (int i = 0; i < SAMPLE_POINTS; ++i)
@@ -297,13 +314,13 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
     for (int i = 0; i < SAMPLE_POINTS; ++i) {
         int buffer_size; char* buffer;
 
-        buffer = SampleBlock(&f_, file_size_, sample_point[i], SAMPLE_SPAN, &buffer_size);
+        buffer = SampleBlock(&f_, FILE_SIZE, sample_point[i], SAMPLE_LENGTH, &buffer_size);
         for (int j = 0; j < buffer_size; ++j)
             ++cnt[buffer[j]];
         total_size += buffer_size;
     }
 
-    double rate = 0.01;
+    double rate = 0.001;
     while (1) {
         special_char->clear();
         for (int i = 0; i < separator_char_size; ++i)
@@ -314,26 +331,6 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
         else
             rate *= 0.1;
     }
-}
-
-char* CandidateGen::RetrieveBlock(int pos, int* block_len) {
-    // In this function, we retrieve the EXPAND_RANGE end-of-line characters before and after the position.
-
-    char* buffer = nullptr;
-    for (int seek_len = 10; seek_len < file_size_; seek_len *= 2) {
-        buffer = SampleBlock(&f_, file_size_, pos, seek_len, block_len);
-
-        // Determine whether the buffer has 2*EXPAND_RANGE end-of-lines
-        int cnt = 0;
-        for (int i = 0; i < *block_len; ++i)
-            if (buffer[i] == '\n')
-                ++cnt;
-        if (cnt >= EXPAND_RANGE * 2 || seek_len >= file_size_ / 2)
-            break;
-        else
-            delete buffer;
-    }
-    return buffer;
 }
 
 bool operator<(const CandidateSchema& a, const CandidateSchema& b) {
