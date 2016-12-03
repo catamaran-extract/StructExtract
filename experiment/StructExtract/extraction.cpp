@@ -30,10 +30,18 @@ void Extraction::ExtractNextTuple()
 {
     SchemaMatch schema_match(schema_);
 
+    bool last_char_space = false;
     char c;
     while (fin_.get(c)) {
         // For windows file, the '\r' characters will be filtered
         if (c == '\r') continue;
+        if (c == ' ') {
+            if (last_char_space) continue;
+            last_char_space = true;
+        }
+        else
+            last_char_space = false;
+
         schema_match.FeedChar(c);
 
         if (schema_match.TupleAvailable()) {

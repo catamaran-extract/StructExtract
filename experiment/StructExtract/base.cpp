@@ -74,6 +74,15 @@ int GetFileSize(const std::string& file) {
     return (int)f.tellg();
 }
 
+void PreprocessBlock(char* block, int* block_len) {
+    int ptr = 0;
+    for (int i = 1; i < *block_len; ++i)
+        if (block[ptr] != ' ' || block[i] != ' ')
+            block[++ptr] = block[i];
+    block[++ptr] = 0;
+    *block_len = ptr;
+}
+
 char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* block_len) {
     // In this function, we retrieve SAMPLE_LENGTH * 2 buffer from fin
     int start = (pos > span ? pos - span : 0);
@@ -84,6 +93,7 @@ char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* blo
     fin->read(block, end - start);
     block[end - start] = 0;
     *block_len = end - start;
+    PreprocessBlock(block, block_len);
     if (start == 0) {
         char* new_block = new char[end - start + 2];
         strcpy(new_block, "\n");

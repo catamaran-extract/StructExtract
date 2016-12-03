@@ -22,5 +22,5 @@ void CopySchema(const Schema* source, Schema* target);
 Schema* ArrayToStruct(const Schema* schema, int repeat_time);
 Schema* ExpandArray(const Schema* schema, int expand_size);
 
-int FieldCount(const Schema* schema);
+int NonFieldCount(const Schema* schema);
 const ParsedTuple* GetRoot(const ParsedTuple* tuple);

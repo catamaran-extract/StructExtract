@@ -11,8 +11,8 @@
 
 CandidateGen::CandidateGen(const std::string& filename) :
     FILE_SIZE(GetFileSize(filename)),
-    SAMPLE_LENGTH(5000),
-    SAMPLE_POINTS(std::min(std::max(1, FILE_SIZE / SAMPLE_LENGTH), 20)) {
+    SAMPLE_LENGTH(4000),
+    SAMPLE_POINTS(std::min(std::max(1, FILE_SIZE / SAMPLE_LENGTH), 10)) {
     f_.open(filename, std::ios::binary);
 }
 
@@ -69,20 +69,19 @@ void CandidateGen::GreedySearch(const std::vector<char>& candidate_special_char)
 void CandidateGen::ExhaustiveSearch(const std::vector<char>& candidate_special_char) {
     // We initialize the special character lookup table here
     bool is_special_char[256];
-    memset(is_special_char, false, sizeof(is_special_char));
-    is_special_char[(unsigned char)'\n'] = true;
 
     std::vector<char> candidate_exclude_eol;
     for (char c : candidate_special_char)
         if (c != '\n') candidate_exclude_eol.push_back(c);
 
-    int special_char_card = candidate_exclude_eol.size();
-    for (int i = 1; i < (1 << special_char_card); ++i) {
-        for (int j = 0; j < special_char_card; ++j)
-            if ((i & (1 << j)) > 0)
+    int special_char_cand_card = candidate_exclude_eol.size();
+    for (int i = 1; i < (1 << special_char_cand_card); ++i) {
+        memset(is_special_char, false, sizeof(is_special_char));
+        is_special_char[(unsigned char)'\n'] = true;
+
+        for (int j = 0; j < special_char_cand_card; ++j)
+            if ((i & (1 << j)) > 0) 
                 is_special_char[candidate_exclude_eol[j]] = true;
-            else
-                is_special_char[candidate_exclude_eol[j]] = false;
 
         std::vector<CandidateSchema> schema_vec;
         EvaluateSpecialCharSet(is_special_char, candidate_special_char, &schema_vec);
@@ -115,6 +114,7 @@ void CandidateGen::ComputeCandidate() {
 
     std::vector<char> candidate_special_char;
     FilterSpecialChar(&candidate_special_char);
+    Logger::GetLogger() << "Special Char Cardinality: " << candidate_special_char.size() << "\n";
 
     //GreedySearch(candidate_special_char);
     ExhaustiveSearch(candidate_special_char);
@@ -320,16 +320,18 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
         total_size += buffer_size;
     }
 
-    double rate = 0.001;
+    double rate = 0.005;
     while (1) {
         special_char->clear();
         for (int i = 0; i < separator_char_size; ++i)
             if (cnt[separator_char[i]] > rate * total_size)
                 special_char->push_back(separator_char[i]);
-        if (special_char->size() > 0)
+        if (special_char->size() > 0 && special_char->size() <= SPECIAL_CHAR_CARD_LIMIT)
             break;
+        else if (special_char->size() > SPECIAL_CHAR_CARD_LIMIT)
+            rate *= 2;
         else
-            rate *= 0.1;
+            rate *= 0.5;
     }
 }
 

@@ -11,11 +11,11 @@ bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
     if (!vec[start + len]->is_char) return false;
     if (vec[start + len]->delimiter == field_char) return false;
 
-    int field_cnt = 0;
-    for (int i = 0; i < len; ++i)
-        field_cnt += FieldCount(vec[start + i]);
+    int non_field_cnt = 0;
+    for (int i = start; i < start + len; ++i)
+        non_field_cnt += NonFieldCount(vec[i]);
     for (int i = start; i <= start + len; ++i)
-        if (vec[i]->is_char && vec[i]->delimiter == '\n')
+        if (CheckEndOfLine(vec[i]))
             return false;
 
     for (int next_start = start + len + 1; next_start + len < (int)vec.size(); next_start += len + 1) {
@@ -27,14 +27,13 @@ bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
         start_pos->push_back(next_start);
         end_pos->push_back(next_start + len);
         if (vec[next_start + len]->delimiter != vec[start + len]->delimiter) {
-            if (len == 0 && next_start < start + 3)
+            if (len == 0 && next_start <= start + 2)
                 return false;
-            else if (len == 1 && next_start == start + 2)
+            else if (len == 1 && next_start <= start + 2 && non_field_cnt == 0)
                 return false;
             else {
                 if (vec[next_start + len]->delimiter != field_char) return true;
-                if (field_cnt == 0) return true;
-                return false;
+                return true;
             }
         }
     }
@@ -86,7 +85,7 @@ Schema* FoldBuffer(const std::string& buffer, std::vector<int>* cov) {
         std::vector<const Schema*> vec;
         for (const auto& ptr : schema)
             vec.push_back(ptr.get());
-        for (int len = 0; len < std::min((int)schema.size(), 50); ++len)
+        for (int len = 0; len < std::min((int)schema.size(), 10); ++len)
             for (int i = 0; i + len < (int)schema.size(); ++i) {
                 std::vector<int> start_pos, end_pos;
                 if (CheckArray(vec, i, len, &start_pos, &end_pos)) {
@@ -297,21 +296,21 @@ Schema* ExpandArray(const Schema* schema, int expand_size) {
 
 }
 
-int FieldCount(const Schema* schema) {
+int NonFieldCount(const Schema* schema) {
     if (schema->is_char) {
         if (schema->delimiter == field_char)
-            return 1;
-        else
             return 0;
+        else
+            return 1;
     }
     int cnt = 0;
     for (const auto& child : schema->child)
-        cnt += FieldCount(child.get());
+        cnt += NonFieldCount(child.get());
     if (schema->is_array) {
         cnt *= 2;
-        if (schema->return_char == field_char)
+        if (schema->return_char != field_char)
             cnt += 2;
-        if (schema->terminate_char == field_char)
+        if (schema->terminate_char != field_char)
             ++cnt;
     }
     return cnt;

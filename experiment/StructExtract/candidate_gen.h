@@ -25,6 +25,7 @@ private:
     const int SAMPLE_POINTS;
     const static int SPAN_LIMIT = 10;
     const static int MOD_A = 999997, MOD_B = 1000003;
+    const static int SPECIAL_CHAR_CARD_LIMIT = 8;
 
     std::ifstream f_;
 
