@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "base.h"
 #include "schema_utility.h"
+#include "schema_match.h"
 
 #include <iostream>
 #include <random>
@@ -157,9 +158,9 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
             else {
                 std::string striped_buffer;
                 bool lasting_field = false;
-                for (int i = 0; i < buffer_len; ++i) {
-                    if (is_special_char[(unsigned char)raw_buffer[i]]) {
-                        striped_buffer.push_back(raw_buffer[i]);
+                for (int j = 0; j < buffer_len; ++j) {
+                    if (is_special_char[(unsigned char)raw_buffer[j]]) {
+                        striped_buffer.push_back(raw_buffer[j]);
                         ++total_size;
                         lasting_field = false;
                     }
@@ -168,7 +169,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
                             striped_buffer.push_back(field_char);
                         lasting_field = true;
                     }
-                    if (potential_special_char[(unsigned char)raw_buffer[i]])
+                    if (potential_special_char[(unsigned char)raw_buffer[j]])
                         ++total_all_char_size;
                 }
                 delete raw_buffer;
@@ -196,21 +197,40 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
         if (candidate.second.coverage > 0.1) {
             if (CheckRedundancy(candidate.second.schema.get()))
                 continue;
-            schema_vec->push_back(
-                CandidateSchema(
-                    candidate.second.schema.release(),
-                    candidate.second.coverage,
-                    candidate.second.all_char_coverage
-                )
-            );
+            schema_vec->push_back(CandidateSchema(candidate.second.schema.release(),0,0));
         }
 
-    for (auto& candidate : *schema_vec)
-        for (const auto& st : *schema_vec) 
-            if (CheckExpandResult(candidate.schema.get(), st.schema.get())) {
-                candidate.all_char_coverage += st.all_char_coverage;
-                candidate.coverage += st.coverage;
+    for (auto& candidate : *schema_vec) {
+        for (int i = 0; i < SAMPLE_POINTS / 2; ++i) {
+            char* raw_buffer; int buffer_len;
+            raw_buffer = SampleBlock(&f_, FILE_SIZE, sample_point[i], SAMPLE_LENGTH, &buffer_len);
+
+            SchemaMatch schema_match(candidate.schema.get());
+            schema_match.Reset();
+            int unmatched_special_char = 0, unmatched_size = 0, special_char_size = 0;
+            for (int j = 0; j < buffer_len; ++j) {
+                schema_match.FeedChar(raw_buffer[j]);
+                if (schema_match.TupleAvailable() || j == buffer_len - 1) {
+                    std::string buffer;
+                    std::unique_ptr<ParsedTuple> ptr;
+                    if (schema_match.TupleAvailable())
+                        ptr.reset(schema_match.GetTuple(&buffer));
+                    else
+                        buffer = schema_match.GetBuffer();
+                    schema_match.Reset();
+                    for (char c : buffer)
+                        if (is_special_char[(unsigned char)c])
+                            ++unmatched_special_char;
+                    unmatched_size += buffer.size();
+                }
+                if (is_special_char[raw_buffer[j]])
+                    ++special_char_size;
             }
+            delete raw_buffer;
+            candidate.coverage += (buffer_len - unmatched_size) / (double)(buffer_len) / SAMPLE_POINTS * 2;
+            candidate.all_char_coverage += (special_char_size - unmatched_special_char) / (double)(buffer_len) / SAMPLE_POINTS * 2;
+        }
+    }
 }
 
 void CandidateGen::EstimateHashCoverage(const std::string& buffer,

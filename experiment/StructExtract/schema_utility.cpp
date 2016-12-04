@@ -182,7 +182,7 @@ bool CheckEqual(const Schema* schemaA, const Schema* schemaB) {
     return true;
 }
 
-std::string GenerateSampleRecord(const Schema* schema, int rep) {
+/*std::string GenerateSampleRecord(const Schema* schema, int rep) {
     if (schema == nullptr)
         return "nullptr";
     if (schema->is_char)
@@ -224,7 +224,7 @@ bool CheckExpandResult(const Schema* source, const Schema* target) {
         if (!schema_match.TupleAvailable()) return false;
     }
     return true;
-}
+}*/
 
 Schema* CopySchema(const Schema* schema) {
     if (schema->is_char)
