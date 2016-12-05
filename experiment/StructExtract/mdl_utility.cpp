@@ -20,7 +20,7 @@ double CheckEnum(const std::vector<std::string>& attr_vec) {
     int dictionary_size = 0;
     std::vector<int> freq;
     for (const auto& pair : dict)
-        if (pair.second > (int)attr_vec.size() / 20) {
+        if (pair.second > (int)attr_vec.size() / 20 && pair.first.length() < 40) {
             freq.push_back(pair.second);
             dictionary_size += (pair.first.length() + 1) * 8;
         } else {
