@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <time.h>
 
 Schema* ShiftSchema(const Schema* schema, const std::string& file_name) {
     std::unique_ptr<Schema> best_schema(CopySchema(schema));
@@ -47,7 +48,7 @@ Schema* ShiftSchema(const Schema* schema, const std::string& file_name) {
 Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, const std::string& filename) {
     double best_mdl = 1e10;
     std::unique_ptr<Schema> best_schema;
-    for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), 50); ++i) {
+    for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), CandidateGen::TOP_CANDIDATE_LIST_SIZE); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen->GetCandidate(i));
         std::unique_ptr<Schema> shifted_schema(ShiftSchema(schema.get(), filename));
         Logger::GetLogger() << "Candidate #" << std::to_string(i) << ": " << ToString(schema.get()) << "\n";
@@ -58,6 +59,7 @@ Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, con
         Logger::GetLogger() << "MDL: " << std::to_string(evaluated_mdl) << "\n";
 
         if (evaluated_mdl < best_mdl) {
+            std::cout << "Updated Best Schema on Pos #" << i + 1 << "\n";
             best_mdl = evaluated_mdl;
             best_schema = std::move(shifted_schema);
         }
@@ -80,6 +82,7 @@ int main(int argc, char** argv)
     std::string input_file(argv[1]);
     std::string output_prefix(argv[2]);
     std::string buffer_prefix("temp");
+    clock_t start = clock();
 
     bool finished_extracting = false;
     int iteration = 0, file_size = -1;
@@ -88,12 +91,19 @@ int main(int argc, char** argv)
         CandidateGen candidate_gen(input_file);
         candidate_gen.ComputeCandidate();
 
+        std::cout << "Used Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << "\n";
+        start = clock();
+
         std::cout << "Evaluating Candidates\n";
         EvaluateMDL evaluate_mdl(input_file);
 
         // Select Best Schema
         std::unique_ptr<Schema> schema(SelectSchema(&candidate_gen, &evaluate_mdl, input_file));
 
+        std::cout << "Used Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << "\n";
+        start = clock();
+
+        std::cout << "Extracting Records\n";
         // Extract
         std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".tsv");
         std::string buffer_file = (buffer_prefix + "_" + std::to_string(iteration) + ".txt");

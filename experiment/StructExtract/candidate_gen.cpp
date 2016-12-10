@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <set>
 
+const double CandidateGen::COVERAGE_THRESHOLD = 0.05;
+
 CandidateGen::CandidateGen(const std::string& filename) :
     FILE_SIZE(GetFileSize(filename)),
     SAMPLE_LENGTH(4000),
@@ -121,7 +123,8 @@ void CandidateGen::ComputeCandidate() {
     ExhaustiveSearch(candidate_special_char);
 
     sort(candidate_schema_.begin(), candidate_schema_.end());
-    for (int i = 0; i < std::min((int)candidate_schema_.size(), 50); ++i) {
+    std::cout << "Schema list Size: " << candidate_schema_.size() << "\n";
+    for (int i = 0; i < std::min((int)candidate_schema_.size(), TOP_CANDIDATE_LIST_SIZE); ++i) {
         Logger::GetLogger() << "Candidate Schema #" << i << ": " << ToString(candidate_schema_[i].schema.get()) << "\n";
         Logger::GetLogger() << "Coverage: " << candidate_schema_[i].coverage << "\n";
         Logger::GetLogger() << "All Special Char Coverage: " << candidate_schema_[i].all_char_coverage << "\n";
@@ -194,7 +197,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
 
     schema_vec->clear();
     for (auto& candidate : hash_schema)
-        if (candidate.second.coverage > 0.1) {
+        if (candidate.second.coverage > COVERAGE_THRESHOLD) {
             if (CheckRedundancy(candidate.second.schema.get()))
                 continue;
             schema_vec->push_back(CandidateSchema(candidate.second.schema.release(),0,0));
@@ -298,7 +301,7 @@ void CandidateGen::ExtractSchema(const Schema* schema, const std::vector<int>& c
                 cov += coverage[j];
                 if (end_of_line[j]) {
                     ++span;
-                    if (hash_coverage.at(hashA) > 0.1) {
+                    if (hash_coverage.at(hashA) > COVERAGE_THRESHOLD) {
                         if (hash_schema->count(hashB) == 0) {
                             std::vector<std::unique_ptr<Schema>> vec;
                             for (int k = i + 1; k <= j; ++k) {
