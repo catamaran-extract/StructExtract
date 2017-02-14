@@ -9,31 +9,33 @@
 class Extraction {
 private:
     std::ifstream fin_;
-    std::ofstream fout_;
-    std::ofstream fbuffer_;
+
     int fin_size_;
-    int fbuffer_size_;
+    int buffer_size_;
 
     bool end_of_file_;
     bool is_special_char_[256];
 
+    std::string buffer_;
     const Schema* schema_;
 
     // We store the output in the memory before actually writing out
-    std::vector<std::unique_ptr<ParsedTuple>> output_;
+    std::unique_ptr<ParsedTuple> tuple_;
 
     // This function returns the max Y coordinate ever used
     void FormatTuple(const ParsedTuple* tuple,
         std::map<std::pair<int, int>, std::string>* result, int curX, int curY, int* maxX, int* maxY);
 
 public:
-    Extraction(const std::string& input_file, const std::string& output_file,
-        const std::string& buffer_file, const Schema* schema);
+    Extraction(const std::string& input_file, const Schema* schema);
     ~Extraction();
     int GetSourceFileSize() { return fin_size_; }
-    int GetRemainFileSize() { return fbuffer_size_; }
-    int GetNumOfTuple() { return output_.size(); }
-    void ExtractNextTuple();
-    void FlushOutput();
+    const ParsedTuple* GetTuple() { return tuple_.get(); }
+    void GetFormattedString(std::map<std::pair<int, int>, std::string>* result, int *maxX, int *maxY) { 
+        result->clear(); *maxX = 0; *maxY = 0;
+        return FormatTuple(tuple_.get(), result, 0, 0, maxX, maxY); 
+    }
+    const std::string& GetBuffer() { return buffer_; }
+    bool ExtractNextTuple();
     bool EndOfFile() { return end_of_file_; }
 };

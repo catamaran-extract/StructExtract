@@ -9,24 +9,19 @@
 
 // This function initialize the extraction engine
 //      input_file : the file to be extracted
-//      buffer_file : the output file for unmatched parts of the input
 //      schema : the schema string
-Extraction::Extraction(const std::string& input_file, const std::string& output_file,
-    const std::string& buffer_file, const Schema* extract_schema) :
-    fbuffer_size_(0),
+Extraction::Extraction(const std::string& input_file, const Schema* extract_schema) :
     end_of_file_(false),
     schema_(extract_schema)
 {
-    Logger::GetLogger() << "Extraction: input: " << input_file << "; output: " << output_file << "; buffer: " << buffer_file << "\n";
+    Logger::GetLogger() << "Extraction - input: " << input_file << "\n";
     Logger::GetLogger() << "Schema: " << ToString(schema_) << "\n";
 
     fin_size_ = GetFileSize(input_file);
     fin_.open(input_file, std::ios::binary);
-    fout_.open(output_file, std::ios::binary);
-    fbuffer_.open(buffer_file, std::ios::binary);
 }
 
-void Extraction::ExtractNextTuple()
+bool Extraction::ExtractNextTuple()
 {
     SchemaMatch schema_match(schema_);
 
@@ -46,26 +41,20 @@ void Extraction::ExtractNextTuple()
 
         if (schema_match.TupleAvailable()) {
             // We found a match
-            std::string buffer;
-            std::unique_ptr<ParsedTuple> ptr(schema_match.GetTuple(&buffer));
-
-            output_.push_back(std::move(ptr));
-            fbuffer_size_ += buffer.length();
-            fbuffer_ << buffer;
-            return;
+            tuple_.reset(schema_match.GetTuple(&buffer_));
+            return true;
         }
     }
 
     // If the program ever reaches this point, it means we reached end-of-file
     Logger::GetLogger() << "Reached End-Of-File\n";
     end_of_file_ = true;
-    fbuffer_ << schema_match.GetBuffer();
+    buffer_ = schema_match.GetBuffer();
+    return false;
 }
 
 Extraction::~Extraction() {
     fin_.close();
-    fout_.close();
-    fbuffer_.close();
 }
 
 void Extraction::FormatTuple(const ParsedTuple* tuple,
@@ -94,19 +83,4 @@ void Extraction::FormatTuple(const ParsedTuple* tuple,
         *maxX = std::max(*maxX, mX);
         *maxY = std::max(*maxY, mY);
     }
-}
-
-void Extraction::FlushOutput() {
-    for (const auto& ptr : output_) {
-        int mX = 0, mY = 0;
-        std::map<std::pair<int, int>, std::string> result;
-        FormatTuple(ptr.get(), &result, 0, 0, &mX, &mY);
-        for (int i = 0; i <= mY; ++i)
-            for (int j = 0; j <= mX; ++j) {
-                if (result.count(std::make_pair(j, i)) > 0)
-                    fout_ << result[std::make_pair(j, i)];
-                fout_ << (j == mX ? '\n' : '\t');
-            }
-    }
-    output_.clear();
 }

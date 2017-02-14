@@ -3,15 +3,26 @@
 
 using namespace v8;
 
-void DemoFunction(const FunctionCallbackInfo<Value>& args) {
+void ExtractStructFromString(const FunctionCallbackInfo<Value>& args) {
     Isolate* isolate = args.GetIsolate();
 
-    Local<v8::String> retval = v8::String::NewFromUtf8(isolate, "Hello World!");
-    args.GetReturnValue().Set(retval);
+    v8::String::Utf8Value param(args[0]->ToString());
+    std::string str(*param);
+    
+    ExtractStructFromString(str);
 }
 
-void init(Handle<Object> exports, Handle<Object> module) {
-    NODE_SET_METHOD(exports, "demo", DemoFunction);
+void GetRow(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();    
+    
+    int index = args[0]->NumberValue();
+    std::vector<std::string> row;
+    GetRow(index, &row);
 }
 
-NODE_MODULE(catamaran, init);
+void Init(Handle<Object> exports, Handle<Object> module) {
+    NODE_SET_METHOD(exports, "extract_struct_from_string", ExtractStructFromString);
+    NODE_SET_METHOD(exports, "get_tuple", GetTuple);
+}
+
+NODE_MODULE(catamaran, Init);

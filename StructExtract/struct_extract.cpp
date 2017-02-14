@@ -4,6 +4,7 @@
 #include "schema_match.h"
 #include "candidate_gen.h"
 #include "extraction.h"
+#include "structure_output.h"
 
 #include <iostream>
 #include <fstream>
@@ -107,24 +108,30 @@ int main(int argc, char** argv)
         // Extract
         std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".tsv");
         std::string buffer_file = (buffer_prefix + "_" + std::to_string(iteration) + ".txt");
-        Extraction extract(input_file, output_file, buffer_file, schema.get());
+        Extraction extract(input_file, schema.get());
+        StructureOutput struct_output(output_file, buffer_file);
         if (file_size == -1)
             file_size = extract.GetSourceFileSize();
 
         bool generated_filter = false;
+        std::map<std::pair<int, int>, std::string> result;
+        int maxX, maxY;
         while (!extract.EndOfFile()) {
-            extract.ExtractNextTuple();
-            extract.FlushOutput();
+            if (extract.ExtractNextTuple()) {
+                extract.GetFormattedString(&result, &maxX, &maxY);
+                struct_output.WriteFormattedString(result, maxX, maxY);
+            }
+            struct_output.WriteBuffer(extract.GetBuffer());
         }
 
         // We terminate when last extraction has less than 10% coverage
-        if (extract.GetSourceFileSize() - extract.GetRemainFileSize() < file_size * 0.1) {
+        if (extract.GetSourceFileSize() - struct_output.GetBufferFileSize() < file_size * 0.1) {
             Logger::GetLogger() << "Terminate: Too little coverage in last extraction.\n";
             break;
         }
         // Also terminate if remaining file has less than 10% coverage
-        if (extract.GetRemainFileSize() < file_size * 0.1) {
-            Logger::GetLogger() << "Terminate: Remaining file size too small (" << std::to_string(extract.GetRemainFileSize()) << ")\n";
+        if (struct_output.GetBufferFileSize() < file_size * 0.1) {
+            Logger::GetLogger() << "Terminate: Remaining file size too small (" << std::to_string(struct_output.GetBufferFileSize()) << ")\n";
             break;
         }
 
