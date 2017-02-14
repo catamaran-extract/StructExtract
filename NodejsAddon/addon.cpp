@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "addon.h"
+
 using namespace v8;
 
 void ExtractStructFromString(const FunctionCallbackInfo<Value>& args) {
