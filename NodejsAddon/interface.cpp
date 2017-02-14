@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <ctime>
 #include <cstdlib>
+#include <algorithm>
 
 std::string GetRandomFileName() {
     srand(time(0));
@@ -82,7 +83,7 @@ Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, con
 
 void ExtractStructFromString(const std::string& str, std::vector<std::vector<std::string>>* table) {
     std::string input_file = GetRandomFileName(), output_file = GetRandomFileName();
-    std::ofstream fout(input_file, ios::binary);
+    std::ofstream fout(input_file, std::ios::binary);
     fout << str;
     fout.close();
     
