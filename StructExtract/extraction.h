@@ -8,7 +8,7 @@
 
 class Extraction {
 private:
-    std::ifstream fin_;
+    std::unique_ptr<std::istream> fin_;
 
     int fin_size_;
     int buffer_size_;
@@ -27,8 +27,9 @@ private:
         std::map<std::pair<int, int>, std::string>* result, int curX, int curY, int* maxX, int* maxY);
 
 public:
-    Extraction(const std::string& input_file, const Schema* schema);
-    ~Extraction();
+    Extraction(std::istream* input_stream, int stream_size, const Schema* schema);
+    static Extraction* GetExtractionInstanceFromFile(const std::string& input_file, const Schema* schema);
+    static Extraction* GetExtractionInstanceFromString(const std::string& input_string, const Schema* schema);
     int GetSourceFileSize() { return fin_size_; }
     const ParsedTuple* GetTuple() { return tuple_.get(); }
     void GetFormattedString(std::map<std::pair<int, int>, std::string>* result, int *maxX, int *maxY) { 

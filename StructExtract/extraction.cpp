@@ -6,19 +6,31 @@
 #include <set>
 #include <string>
 #include <algorithm>
+#include <sstream>
 
 // This function initialize the extraction engine
 //      input_file : the file to be extracted
 //      schema : the schema string
-Extraction::Extraction(const std::string& input_file, const Schema* extract_schema) :
+Extraction::Extraction(std::istream* input_stream, int stream_size, const Schema* extract_schema) :
+    fin_size_(stream_size), 
     end_of_file_(false),
     schema_(extract_schema)
 {
-    Logger::GetLogger() << "Extraction - input: " << input_file << "\n";
-    Logger::GetLogger() << "Schema: " << ToString(schema_) << "\n";
+    fin_.reset(input_stream);
+}
 
-    fin_size_ = GetFileSize(input_file);
-    fin_.open(input_file, std::ios::binary);
+Extraction* Extraction::GetExtractionInstanceFromFile(const std::string& input_file, const Schema* schema) {
+    Logger::GetLogger() << "Extraction - input file: " << input_file << "\n";
+    Logger::GetLogger() << "Schema: " << ToString(schema) << "\n";
+
+    return new Extraction(new std::ifstream(input_file, std::ios::binary), GetFileSize(input_file), schema);
+}
+
+Extraction* Extraction::GetExtractionInstanceFromString(const std::string& input_string, const Schema* schema) {
+    Logger::GetLogger() << "Extraction - input string:\n" << input_string << "\n-------------\n";
+    Logger::GetLogger() << "Schema: " << ToString(schema) << "\n";
+
+    return new Extraction(new std::istringstream(input_string, std::ios::binary), input_string.size(), schema);
 }
 
 bool Extraction::ExtractNextTuple()
@@ -27,7 +39,7 @@ bool Extraction::ExtractNextTuple()
 
     bool last_char_space = false;
     char c;
-    while (fin_.get(c)) {
+    while (fin_->get(c)) {
         // For windows file, the '\r' characters will be filtered
         if (c == '\r') continue;
         if (c == ' ') {
@@ -51,10 +63,6 @@ bool Extraction::ExtractNextTuple()
     end_of_file_ = true;
     buffer_ = schema_match.GetBuffer();
     return false;
-}
-
-Extraction::~Extraction() {
-    fin_.close();
 }
 
 void Extraction::FormatTuple(const ParsedTuple* tuple,

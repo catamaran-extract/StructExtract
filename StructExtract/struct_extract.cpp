@@ -108,24 +108,24 @@ int main(int argc, char** argv)
         // Extract
         std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".tsv");
         std::string buffer_file = (buffer_prefix + "_" + std::to_string(iteration) + ".txt");
-        Extraction extract(input_file, schema.get());
+        std::unique_ptr<Extraction> extract(Extraction::GetExtractionInstanceFromFile(input_file, schema.get()));
         StructureOutput struct_output(output_file, buffer_file);
         if (file_size == -1)
-            file_size = extract.GetSourceFileSize();
+            file_size = extract->GetSourceFileSize();
 
         bool generated_filter = false;
         std::map<std::pair<int, int>, std::string> result;
         int maxX, maxY;
-        while (!extract.EndOfFile()) {
-            if (extract.ExtractNextTuple()) {
-                extract.GetFormattedString(&result, &maxX, &maxY);
+        while (!extract->EndOfFile()) {
+            if (extract->ExtractNextTuple()) {
+                extract->GetFormattedString(&result, &maxX, &maxY);
                 struct_output.WriteFormattedString(result, maxX, maxY);
             }
-            struct_output.WriteBuffer(extract.GetBuffer());
+            struct_output.WriteBuffer(extract->GetBuffer());
         }
 
         // We terminate when last extraction has less than 10% coverage
-        if (extract.GetSourceFileSize() - struct_output.GetBufferFileSize() < file_size * 0.1) {
+        if (extract->GetSourceFileSize() - struct_output.GetBufferFileSize() < file_size * 0.1) {
             Logger::GetLogger() << "Terminate: Too little coverage in last extraction.\n";
             break;
         }
