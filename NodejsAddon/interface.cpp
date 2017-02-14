@@ -80,7 +80,7 @@ Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, con
     return best_schema.release();
 }
 
-void ExtractStructFromString(const std::string& str, std::vector<std::vector<std::string>>>* table) {
+void ExtractStructFromString(const std::string& str, std::vector<std::vector<std::string>>* table) {
     std::string input_file = GetRandomFileName(), output_file = GetRandomFileName();
     std::ofstream fout(input_file, ios::binary);
     fout << str;
