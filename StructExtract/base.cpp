@@ -2,6 +2,7 @@
 #include "logger.h"
 #include <memory>
 #include <string>
+#include <cstring>
 
 Schema* Schema::CreateChar(char delimiter) {
     Schema* schema = new Schema();

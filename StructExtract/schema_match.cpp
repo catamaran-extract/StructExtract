@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 MatchPoint FindAnchorDown(const MatchPoint& mp, int* array_cnt) {
     MatchPoint next_mp(mp);
