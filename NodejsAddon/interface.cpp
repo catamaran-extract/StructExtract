@@ -10,8 +10,6 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-#include <iomanip>
-#include <ctime>
 #include <cstdlib>
 #include <algorithm>
 
@@ -20,20 +18,6 @@ namespace {
 	std::vector<std::vector<std::string>> table;
 	
 }  // anonymous namespace
-
-std::string GetRandomString() {
-    srand(time(0));
-    auto t = std::time(nullptr);
-    struct tm timeinfo;
-    localtime_s(&timeinfo, &t);    
-    std::stringstream ss;
-    ss << std::put_time(&timeinfo, "temp_%m%d_%H%M_");
-    std::string str = ss.str();    
-    for (int i = 0; i < 10; ++i) {
-        str.append(1, rand() % 26 + 'a');
-    }
-	return str;
-}
 
 void ExtractStructFromFile(const std::string& input_file) {
     CandidateGen candidate_gen(input_file);
@@ -64,20 +48,4 @@ void ExtractStructFromFile(const std::string& input_file) {
                         table[i][j] = "";
         }
     }        
-}
-
-void ExtractStructFromString(const std::string& str) {
-    std::string input_file = GetRandomString();
-	input_file.append(".txt");
-
-    std::ofstream fout(input_file, std::ios::binary);
-    fout << str;
-    fout.close();
-	
-	ExtractStructFromFile(input_file);
-    
-}
-
-void GetTuple(int index, std::vector<std::string>* tuple) {
-	*tuple = table[index];
 }
