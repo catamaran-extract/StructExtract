@@ -1,10 +1,10 @@
-#include "..\StructExtract\evaluate_mdl.h"
-#include "..\StructExtract\schema_utility.h"
-#include "..\StructExtract\schema_match.h"
-#include "..\StructExtract\candidate_gen.h"
-#include "..\StructExtract\extraction.h"
-#include "..\StructExtract\structure_output.h"
-#include "..\StructExtract\post_process.h"
+#include "../StructExtract/evaluate_mdl.h"
+#include "../StructExtract/schema_utility.h"
+#include "../StructExtract/schema_match.h"
+#include "../StructExtract/candidate_gen.h"
+#include "../StructExtract/extraction.h"
+#include "../StructExtract/structure_output.h"
+#include "../StructExtract/post_process.h"
 
 #include <string>
 #include <vector>
