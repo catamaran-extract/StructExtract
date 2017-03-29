@@ -4,6 +4,8 @@
 #include <fstream>
 #include "base.h"
 
+#define LOGGER_SWITCH false
+
 class Logger {
 private:
     std::ofstream f_;
@@ -17,8 +19,10 @@ public:
 
 template <typename T>
 Logger& operator<<(Logger& l, const T& val) {
-    l.f_ << val;
-    l.f_.flush();
+    if (LOGGER_SWITCH) {
+        l.f_ << val;
+        l.f_.flush();
+    }
     return l;
 }
 
