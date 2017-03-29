@@ -43,20 +43,20 @@ void ExtractStructFromFile(const FunctionCallbackInfo<Value>& args) {
 void NodeSelectSchema(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 	
-	args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From SelectSchema!");
+	args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From SelectSchema!"));
 }
 
 void NodeCandidateGen(const FunctionCallbackInfo<Value>& args) {
 	Isolate* isolate = args.GetIsolate();
 	
-	args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From CandidateGen!");
+	args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From CandidateGen!"));
 }
 
 void NodeExtractFromFile(const FunctionCallbackInfo<Value>& args) {
     Isolate* isolate = args.GetIsolate();
 
     v8::String::Utf8Value param(args[0]->ToString());
-	args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From Extract!");
+	args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From Extract!"));
 }
 
 void Init(Handle<Object> exports, Handle<Object> module) {
