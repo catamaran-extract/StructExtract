@@ -118,19 +118,20 @@ void ExtractFromFile(const std::string& filename, const std::string& schema, std
 
     std::map<std::pair<int, int>, std::string> result;
     table->clear();
-    int maxX, maxY;
+    int maxX, maxY, indY = 0;
     while (!extract->EndOfFile()) {
         if (extract->ExtractNextTuple()) {
             extract->GetFormattedString(&result, &maxX, &maxY);
-            table->resize(maxY + 1);
+            table->resize(indY + maxY + 1);
             for (int i = 0; i <= maxY; ++i)
-                (*table)[i].resize(maxX + 1);
+                (*table)[i + indY].resize(maxX + 1);
             for (int i = 0; i <= maxY; ++i)
                 for (int j = 0; j <= maxX; ++j)
                     if (result.count(std::make_pair(j, i)) > 0)
-                        (*table)[i][j] = result.at(std::make_pair(j, i));
+                        (*table)[i + indY][j] = result.at(std::make_pair(j, i));
                     else
-                        (*table)[i][j] = "";
+                        (*table)[i + indY][j] = "";
+            indY += maxY + 1;
         }
     }        
 }
