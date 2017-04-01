@@ -25,15 +25,15 @@ std::string Serialize(Schema* schema) {
         return "nullptr";
     std::string ret = "";
     if (schema->is_char)
-        return "0{" + std::to_string(schema->delimiter) + "}";
+        return "0{" + std::string(1, schema->delimiter) + "}";
     if (schema->is_array)
         ret += "1{";
     if (schema->is_struct)
         ret += "2{";
     for (const auto& ptr : schema->child)
-        ret += ToString(ptr.get());
+        ret += Serialize(ptr.get());
     if (schema->is_array)
-        ret += "}[" + std::to_string(schema->return_char) + "][" + std::to_string(schema->terminate_char) + "]";
+        ret += "}[" + std::string(1, schema->return_char) + "][" + std::string(1, schema->terminate_char) + "]";
     if (schema->is_struct)
         ret += "}";
     return ret; 

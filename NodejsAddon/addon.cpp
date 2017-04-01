@@ -61,7 +61,7 @@ void NodeCandidateGen(const FunctionCallbackInfo<Value>& args) {
     obj->Set(String::NewFromUtf8(isolate, "schema_list"), schema_list);
     obj->Set(String::NewFromUtf8(isolate, "escaped_list"), escaped_list);
     
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, "Hello World From CandidateGen!"));
+    args.GetReturnValue().Set(obj);
 }
 
 void NodeSelectSchema(const FunctionCallbackInfo<Value>& args) {
