@@ -15,9 +15,9 @@
 #include <algorithm>
 
 namespace {
-	
-	std::vector<std::vector<std::string>> table;
-	
+    
+    std::vector<std::vector<std::string>> table;
+    
 }  // anonymous namespace
 
 std::string Serialize(Schema* schema) {
@@ -28,96 +28,96 @@ std::string Serialize(Schema* schema) {
         return "0{" + std::to_string(schema->delimiter) + "}";
     if (schema->is_array)
         ret += "1{";
-	if (schema->is_struct)
-		ret += "2{";
+    if (schema->is_struct)
+        ret += "2{";
     for (const auto& ptr : schema->child)
         ret += ToString(ptr.get());
     if (schema->is_array)
         ret += "}[" + std::to_string(schema->return_char) + "][" + std::to_string(schema->terminate_char) + "]";
-	if (schema->is_struct)
-		ret += "}";
-    return ret;	
+    if (schema->is_struct)
+        ret += "}";
+    return ret; 
 }
 
 Schema* Deserialize(const std::string& str, int* pos) {
-	if (str == "nullptr")
-		return nullptr;
-	if (str[*pos] == '0') {
-		Schema* schema = Schema::CreateChar(str[*pos + 2]);
-		*pos = *pos + 4;
-		return schema;
-	}
-	if (str[*pos] == '1') {
-		*pos += 2;
-		std::vector<std::unique_ptr<Schema>> vec;
-		while (1) {
-			std::unique_ptr<Schema> ptr(Deserialize(str, pos));
-			vec.push_back(std::move(ptr));
-			if (str[*pos]=='}') break;
-		}
-		char return_char = str[*pos + 2], terminate_char = str[*pos + 5];
-		*pos += 7;
-		return Schema::CreateArray(&vec, return_char, terminate_char);
-	}
-	if (str[*pos] == '2') {
-		*pos += 2;
-		std::vector<std::unique_ptr<Schema>> vec;
-		while (1) {
-			std::unique_ptr<Schema> ptr(Deserialize(str, pos));
-			vec.push_back(std::move(ptr));
-			if (str[*pos]=='}') break;
-		}
-		*pos += 1;
-		return Schema::CreateStruct(&vec);
-	}
+    if (str == "nullptr")
+        return nullptr;
+    if (str[*pos] == '0') {
+        Schema* schema = Schema::CreateChar(str[*pos + 2]);
+        *pos = *pos + 4;
+        return schema;
+    }
+    if (str[*pos] == '1') {
+        *pos += 2;
+        std::vector<std::unique_ptr<Schema>> vec;
+        while (1) {
+            std::unique_ptr<Schema> ptr(Deserialize(str, pos));
+            vec.push_back(std::move(ptr));
+            if (str[*pos]=='}') break;
+        }
+        char return_char = str[*pos + 2], terminate_char = str[*pos + 5];
+        *pos += 7;
+        return Schema::CreateArray(&vec, return_char, terminate_char);
+    }
+    if (str[*pos] == '2') {
+        *pos += 2;
+        std::vector<std::unique_ptr<Schema>> vec;
+        while (1) {
+            std::unique_ptr<Schema> ptr(Deserialize(str, pos));
+            vec.push_back(std::move(ptr));
+            if (str[*pos]=='}') break;
+        }
+        *pos += 1;
+        return Schema::CreateStruct(&vec);
+    }
 }
 
 inline Schema* Deserialize(const std::string& str) {
-	int pos = 0;
-	return Deserialize(str, &pos);
+    int pos = 0;
+    return Deserialize(str, &pos);
 }
 
 void CandidateGenerate(const std::string& filename, std::vector<std::string>* vec, std::vector<std::string>* escaped) {
     CandidateGen candidate_gen(filename);
-	candidate_gen.ComputeCandidate();
-	
-	vec->clear();
-	escaped->clear();
+    candidate_gen.ComputeCandidate();
+    
+    vec->clear();
+    escaped->clear();
     for (int i = 0; i < std::min(candidate_gen.GetNumOfCandidate(), CandidateGen::TOP_CANDIDATE_LIST_SIZE); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen.GetCandidate(i));
-		vec->push_back(Serialize(schema.get()));
-		escaped->push_back(ToString(schema.get()));
-	}
+        vec->push_back(Serialize(schema.get()));
+        escaped->push_back(ToString(schema.get()));
+    }
 }
 
 void SelectSchema(const std::string& filename, std::vector<std::string>& vec, std::string* schema, std::string* escaped) {
     double best_mdl = 1e10;
     std::unique_ptr<Schema> best_schema;
-	EvaluateMDL evaluate_mdl(filename);	
-	
-	for (int i = 0; i < vec.size(); ++i) {
+    EvaluateMDL evaluate_mdl(filename); 
+    
+    for (int i = 0; i < vec.size(); ++i) {
         std::unique_ptr<Schema> schema(Deserialize(vec[i]));
-        std::unique_ptr<Schema> shifted_schema(ShiftSchema(schema.get(), filename));	
-		
-        double evaluated_mdl = evaluate_mdl.EvaluateSchema(shifted_schema.get());		
+        std::unique_ptr<Schema> shifted_schema(ShiftSchema(schema.get(), filename));    
+        
+        double evaluated_mdl = evaluate_mdl.EvaluateSchema(shifted_schema.get());       
 
         if (evaluated_mdl < best_mdl) {
             best_mdl = evaluated_mdl;
             best_schema = std::move(shifted_schema);
         }
-	}
-	*schema = Serialize(best_schema.get());
-	*escaped = ToString(best_schema.get());
+    }
+    *schema = Serialize(best_schema.get());
+    *escaped = ToString(best_schema.get());
 }
 
 void ExtractFromFile(const std::string& filename, const std::string& schema, std::vector<std::vector<std::string>>* table) {
-	std::unique_ptr<Schema> schema_ptr(Deserialize(schema));
+    std::unique_ptr<Schema> schema_ptr(Deserialize(schema));
 
     // Extract
     std::unique_ptr<Extraction> extract(Extraction::GetExtractionInstanceFromFile(filename, schema_ptr.get()));
 
     std::map<std::pair<int, int>, std::string> result;
-	table->clear();
+    table->clear();
     int maxX, maxY;
     while (!extract->EndOfFile()) {
         if (extract->ExtractNextTuple()) {
