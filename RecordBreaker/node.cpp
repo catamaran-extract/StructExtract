@@ -23,8 +23,35 @@ Node::Node(const std::string& filename):
 	type_union(false){
 	ifstream fin(filename.c_str());
 	string line;
-
+	
+	int currentId = 0;  // currentId
+	chunk_str chunk;
 	while (getline(fin,line)){
+		if(line.find("===============") != std::string::npos){
+			chunk.Id = currentId;
+			currentId++;
+			chunks.push_back(chunk);
+			chunk.SS.clear();
+		}else{
+			if(line.length() > 0)
+			{
+				istringstream line_ss(line);
+				string lex_token;
+				line_ss >> lex_token; 
+				//cerr << currentId << ":" << lex_token << "," << line << endl; 
+				pair<string,string > token;
+				token.first = lex_token; 
+				token.second = ((line.length()-(lex_token.length()+1)>0)?line.substr(lex_token.length()+1,line.length()-(lex_token.length()+1)):lex_token);
+				chunk.SS.push_back(token);
+			}
+		}
+	}
+	if(chunk.SS.size() != 0){
+		chunk.Id = currentId;
+		chunks.push_back(chunk);
+	}
+	cerr << "=====total number of chunks:" << chunks.size() << "======" << endl;
+	/*while (getline(fin,line)){
 		istringstream line_ss(line);
 		string token;
 		vector<string > chunk;
@@ -32,7 +59,7 @@ Node::Node(const std::string& filename):
 			chunk.push_back(token);
 		}
 		chunks.push_back(chunk); //root.chunks: the whole file
-	}
+	}*/
 	children.clear();    // initial, no children
 }
 
@@ -55,10 +82,10 @@ int Node::return_chunks_cnt(){
 void Node::is_base(){
 	bool all_empty = true, none_empty = true;
 	for(int i = 0; i < chunks.size(); i++){
-		if(chunks[i].size() > 0){
+		if(chunks[i].SS.size() > 0){
 			all_empty = false;
 		}
-		if(chunks[i].size() == 0){
+		if(chunks[i].SS.size() == 0){
 			none_empty = false;
 		}
 		if((all_empty == false) && (none_empty == false))
@@ -66,12 +93,12 @@ void Node::is_base(){
 	}
 	if(all_empty) type_base = true;
 	if(none_empty){
-		string base = chunks[0][0];
+		string base = chunks[0].SS[0].first;
 		for(int i = 0; i < chunks.size(); i++){
-			if(chunks[i].size() != 1)   // each chunk only have one token
+			if(chunks[i].SS.size() != 1)   // each chunk only have one token
 				return ;
 			else{
-				if(chunks[i][0].compare(base) != 0)  // each token is of the same type
+				if((chunks[i].SS[0].first).compare(base) != 0)  // each token is of the same type
 					return ;
 			}
 		}
@@ -90,8 +117,8 @@ void Node::cal_histogram(vector<Stats > &tokens_stats){ // each token has a hist
 		string token;
 		map<string, int> token_freq; // the frequency of each token in this chunk
 		//if(chunks[i].size() == 0) token_freq[""]++;  // in case this token is empty
-		for(int j = 0; j < chunks[i].size(); ++j){
-			token_freq[chunks[i][j]]++; // if not exist, then 0+1. =======ensure correct=========
+		for(int j = 0; j < chunks[i].SS.size(); ++j){
+			token_freq[chunks[i].SS[j].first]++; // if not exist, then 0+1. =======ensure correct=========
 		}
 		
 		for(map<string, int>::iterator it = token_freq.begin(); it != token_freq.end(); ++it){
@@ -168,11 +195,11 @@ void Node::construct_children_struct(map<string, int> &struct_group){ // the his
 	for(int i = 0; i < chunks.size(); ++i){
 		string order = "";
 		map<string, int> tmp = struct_group;
-		for(int j = 0; j < chunks[i].size(); ++j){
-			if(tmp.find(chunks[i][j]) != tmp.end()){
-				int token_id = tmp[chunks[i][j]];
+		for(int j = 0; j < chunks[i].SS.size(); ++j){
+			if(tmp.find(chunks[i].SS[j].first) != tmp.end()){
+				int token_id = tmp[chunks[i].SS[j].first];
 				order += (to_string(token_id)+" ");
-				tmp.erase(chunks[i][j]);
+				tmp.erase(chunks[i].SS[j].first);
 			}
 		}
 		if(tmp.size() != 0){
@@ -193,14 +220,16 @@ void Node::construct_children_struct(map<string, int> &struct_group){ // the his
 		for(int i = 0; i < chunks.size(); ++i){
 			map<string, int> tmp = struct_group;
 			int ptr = 0; // the ith branch
-			for(int j = 0; j < chunks[i].size(); ++j){
-				if(tmp.find(chunks[i][j]) != tmp.end()){
-					tmp.erase(chunks[i][j]);
+			for(int j = 0; j < chunks[i].SS.size(); ++j){
+				if(tmp.find(chunks[i].SS[j].first) != tmp.end()){
+					tmp.erase(chunks[i].SS[j].first);
 					ptr++;
-					(children[ptr])->chunks[i].push_back(chunks[i][j]);
+					(children[ptr])->chunks[i].SS.push_back(chunks[i].SS[j]);
+					(children[ptr])->chunks[i].Id = chunks[i].Id;
 					ptr++;
 				}else{
-					(children[ptr])->chunks[i].push_back(chunks[i][j]);					
+					(children[ptr])->chunks[i].SS.push_back(chunks[i].SS[j]);					
+					(children[ptr])->chunks[i].Id = chunks[i].Id;
 				}
 			}
 			if(ptr != children.size()-1)
@@ -209,7 +238,7 @@ void Node::construct_children_struct(map<string, int> &struct_group){ // the his
 		cerr << "finish constructing the children" << endl;
 	}else{  // union
 		if(branches.size() == 1)
-			construct_children_union();
+			construct_children_union(); // special case, can terminate
 		else{
 			children.resize(branches.size());
 			int ptr = 0;
@@ -247,30 +276,40 @@ int Node::is_array(vector<Stats > &tokens_stats, vector<Group_stat > &groups){
 	return first_group;
 }
 
-void Node::construct_children_array(map<string, int> &struct_group){ // the histograms from group G
+void Node::construct_children_array(map<string, int> &array_group){ // the histograms from group G
 	children.resize(3);  // 3 branches
 	for(int i = 0; i < 3; ++i){
 		children[i] = new Node(int(chunks.size()));  // remember to delete
 	}
 	for(int i = 0; i < chunks.size(); ++i){
-		map<string, int> tmp = struct_group;
-		int child_ptr = 0, post_ptr = 0;
-		for(int j = 0; j < chunks[i].size(); ++j){
-			if(child_ptr == 0)
-				(children[0])->chunks[i].push_back(chunks[i][j]); //preamble subsequence
-			if(tmp.find(chunks[i][j]) != tmp.end()){
-				tmp.erase(chunks[i][j]);
+		map<string, int> tmp = array_group;
+		int child_ptr = 0, post_ptr = 0, pre_ptr = 0;
+		for(int j = 0; j < chunks[i].SS.size(); ++j){
+			if(child_ptr == 0){
+				(children[0])->chunks[i].SS.push_back(chunks[i].SS[j]); //preamble subsequence
+				(children[0])->chunks[i].Id = chunks[i].Id;
+			}
+			if(tmp.find(chunks[i].SS[j].first) != tmp.end()){
+				tmp.erase(chunks[i].SS[j].first);
 				if(tmp.size() == 0){  //the end of one subsequence
+					if(child_ptr == 0)
+						pre_ptr = j + 1;
 					child_ptr++; 
-					tmp = struct_group;
+					tmp = array_group;
 					post_ptr = j;
 				}
 			}
 		}
-		for(map<string, int>::iterator it = struct_group.begin(); it != struct_group.end(); ++it)
-			(children[1])->chunks[i].push_back(it->first);  // array itself
-		for(int j = post_ptr + 1; j < chunks[i].size(); ++j){
-			(children[2])->chunks[i].push_back(chunks[i][j]);  //postamble subsequence
+		for(map<string, int>::iterator it = array_group.begin(); it != array_group.end(); ++it){
+			int range = ((pre_ptr == 0)? 0 : (post_ptr-pre_ptr+1));
+			(children[1])->chunks[i].SS.push_back(make_pair(it->first,to_string(range)));  // array itself, real_string is the number of tokens in this array_group
+			(children[1])->chunks[i].Id = chunks[i].Id;
+		}
+		if(pre_ptr !=0 ){  // in case there is only preamble subsequence
+			for(int j = post_ptr + 1; j < chunks[i].SS.size(); ++j){
+				(children[2])->chunks[i].SS.push_back(chunks[i].SS[j]);  //postamble subsequence
+				(children[2])->chunks[i].Id = chunks[i].Id;  //postamble subsequence
+			}
 		}
 	}
 }
@@ -283,7 +322,7 @@ void Node::construct_children_union(){ // the histograms from group G
 		int ptr = 0; 
 		first_token.clear();
 		for(int i = 0; i < chunks.size(); ++i){
-			string first = (chunks[i].size()>pivot?chunks[i][pivot]:"");
+			string first = (chunks[i].SS.size()>pivot?chunks[i].SS[pivot].first:"");
 			if(first_token.find(first) == first_token.end()){
 				first_token[first] = ptr;
 				ptr++;
@@ -304,22 +343,23 @@ void Node::construct_children_union(){ // the histograms from group G
 			children[i] = new Node();  // remember to delete
 		}
 		for(int i = 0; i < chunks.size(); ++i){
-			string first = (chunks[i].size()>pivot?chunks[i][pivot]:"");
+			string first = (chunks[i].SS.size()>pivot?chunks[i].SS[pivot].first:"");
 			//cerr << first << ";" << first_token[first] << endl;
 			(children[first_token[first]])->chunks.push_back(chunks[i]);
 		}		
 	}else{  // struct, each is the same; hoever, can not meet minCov criteria
 		type_struct = true; type_union = false;
-		int branchCnt = chunks[0].size();
+		int branchCnt = chunks[0].SS.size();
 		children.resize(branchCnt);
 		for(int i = 0; i < children.size(); ++i){
 			children[i] = new Node(chunks.size());  // remember to delete
 		}
 		
 		for(int j = 0; j < branchCnt; ++j){
-			cerr << j << "---" << chunks[0][j] << ";";
+			cerr << j << "---" << chunks[0].SS[j].first << ";";
 			for(int i = 0; i < chunks.size(); ++i){
-				children[j]->chunks[i].push_back(chunks[i][j]);
+				children[j]->chunks[i].SS.push_back(chunks[i].SS[j]);
+				children[j]->chunks[i].Id = chunks[i].Id;
 			}
 		}
 		cerr << endl;
@@ -376,4 +416,102 @@ void Node::find_structure(int level, int branchID){
 	}
 	//else
 	//	cerr << level << " level;" << (type_base?"type_base: ":"") << endl;
+}
+
+/*
+void print_structure(FILE * fout, vector<vector<pair<string,string>> > original, vector<vector<string > > &after_structured){
+	if(type_base){
+		for(int i = 0; i < original.size(); ++i){
+			for(int j = 0; j < original[i].size(); ++j){
+				after_structure[i].push_back(original[i][j].second);
+			}
+		}
+	}else{
+		
+		for(int i = children.size()-1 ; i >= 0; --i){
+			ss.push(children[i]);
+		}
+		while(!ss.empty()){
+			Node cur = ss.top(); ss.pop();
+			
+		}
+	}
+}*/
+
+
+void Node::print_structure(const std::string& filename){
+	vector<chunk_str > original = chunks; // the original document
+	vector<vector<string > > after_structured(original.size());
+	vector<int > after_structured_start(original.size(),0);
+	ofstream fout(filename);
+	
+	stack<pair<Node*, int> > ss;  // special, indicate whether this is the array itself
+	ss.push(make_pair(this, 0));
+	while(!ss.empty()){
+		Node cur = *(ss.top().first); 
+		int special = ss.top().second;
+		ss.pop();
+		if(special == 1){
+			
+			for(int i = 0; i < cur.chunks.size(); ++i){
+				int curId = cur.chunks[i].Id;
+				int range = stoi(cur.chunks[i].SS[0].second);
+				int start_pos = after_structured_start[curId];
+				//cerr << "---" << curId << ":" << start_pos << "," << range << endl;
+				if(range > 0){
+					after_structured[curId].push_back("[[[");
+					for(int j = start_pos; j < start_pos + range; ++j){
+						if(start_pos + range > original[curId].SS.size())
+							cerr << "ERROR---" << curId << ";" << start_pos << "+" << range << "," << original[curId].SS.size() << endl;
+						after_structured[curId].push_back(original[curId].SS[j].second);
+						after_structured_start[curId]++;
+					}
+					after_structured[curId].push_back("]]]");
+				}
+			}
+			/*map<string, vector<string> > array_SS;
+			vector<string> tmp;
+			for(int j = 0; j < cur[0].SS.size(); ++j){
+				array_SS[cur[0].SS[j].first] = tmp;
+			}
+			for(int i = 0; i < cur.size(); ++i){ // should be of struct or base type!
+				int curId = cur.chunks[i].Id;
+				int range = cur.chunks[i].SS[0].second;
+				int start_pos = after_structure[curId].size();
+				for(int j = start_pos; j < start_pos + range; ++j){
+					array_SS[original[curId].SS[j].first].push_back(original[curId].SS[j].second);
+				}
+			}*/
+		}else{
+			if(cur.type_base || (cur.children.size()==0)){ // base
+				for(int i = 0; i < cur.chunks.size(); ++i){
+					int curId = cur.chunks[i].Id;
+					for(int j = 0; j < cur.chunks[i].SS.size(); ++j){
+						after_structured[curId].push_back(cur.chunks[i].SS[j].second);
+						after_structured_start[curId]++;
+					}
+				}
+				
+			}else{
+				if(cur.type_struct || cur.type_union){
+					//cerr << "push" << cur.children.size() << (cur.type_struct?"true":"false") << endl;
+					for(int i = cur.children.size()-1 ; i >= 0; --i){
+						ss.push(make_pair(cur.children[i],0));
+					}
+				}else{ //array
+					ss.push(make_pair(cur.children[2],0));
+					ss.push(make_pair(cur.children[1],1)); // indicate special!!
+					ss.push(make_pair(cur.children[0],0));
+				}
+			}
+		}	
+	}
+	for(int i = 0; i < after_structured.size(); ++i){
+		if(after_structured_start[i] != original[i].SS.size()) // guarantee correctness
+			cerr << "ERROR" << i << ":" << after_structured_start[i] << "," << original[i].SS.size() << endl;
+		for(int j = 0; j < after_structured[i].size(); ++j){
+			fout << after_structured[i][j] << " ";
+		}
+		fout << endl;
+	}
 }

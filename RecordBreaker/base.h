@@ -7,6 +7,7 @@
 #include <map>
 #include <math.h> 
 #include <sstream> 
+#include <stack> 
 #include <string>
 #include <algorithm>
 #include <climits>

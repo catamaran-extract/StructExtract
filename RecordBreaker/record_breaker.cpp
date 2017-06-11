@@ -38,14 +38,14 @@ int main(int argv, char** argc)
 
     // Storing the input file directory, buffer files will store the remaining unextracted parts
     std::string input_file(argc[1]);
-    std::string output_prefix(argc[2]);
-    std::string buffer_prefix("temp");
-    parse_args(argv, argc);
+    std::string output_file(argc[2]);
+	parse_args(argv, argc);
 
     clock_t start = clock();
     Node root(input_file);
     root.find_structure(1,1);
-
+	root.print_structure(output_file);
+	
     std::cout << "---------------Used Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << "------------------\n";
     root.delete_node(1,1);
     

@@ -10,11 +10,11 @@ sudo make install
 
 
 
-flex testxxLexer.l     =>  testxxLexer.l->lex.yy.cc
+flex test.l     =>  testxxLexer.l->lex.yy.cc
 g++ lex.yy.cc -lfl -o testLexer       =>  lex.yy.cc -> testLexer
 cat test.txt  | ./testLexer > input.txt
 
 
 g++ -o record_breaker base.cpp node.cpp record_breaker.cpp -std=c++11
 ./record_breaker input.txt output.txt -clusTol 0.01 -maxMass 0.2 -minCov 0.85
-./record_breaker input.txt output.txt -clusTol 0.01 -maxMass 200 -minCov 300
+[use this: current code setting]./record_breaker input.txt output.txt -clusTol 0.01 -maxMass 200 -minCov 300
