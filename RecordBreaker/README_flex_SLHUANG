@@ -10,7 +10,7 @@ sudo make install
 
 
 
-flex test.l     =>  testxxLexer.l->lex.yy.cc
+flex test.l     =>  test.l->lex.yy.cc
 g++ lex.yy.cc -lfl -o testLexer       =>  lex.yy.cc -> testLexer
 cat test.txt  | ./testLexer > input.txt
 
