@@ -29,7 +29,7 @@ Logger& operator<<(Logger& l, const T& val) {
 inline std::string EscapeChar(char c) {
     if (c == '\n') return "\\n";
     else if (c == '\t') return "\\t";
-    else if (c == field_char) return "*";
+    else if (c == FIELD_CHAR) return "*";
     else return std::string(1, c);
 }
 

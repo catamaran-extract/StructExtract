@@ -63,7 +63,7 @@ SchemaMatch::SchemaMatch(const Schema* schema) :
 
     memset(is_special_char_, false, sizeof(is_special_char_));
     GenerateSpecialChar(schema);
-    is_special_char_[field_char] = false;
+    is_special_char_[FIELD_CHAR] = false;
 }
 
 void SchemaMatch::GenerateSpecialChar(const Schema* schema) {
@@ -94,10 +94,10 @@ void SchemaMatch::FeedChar(char c) {
         }
         else {
             buffer_.push_back(std::string(1, c));
-            delimiter_.push_back(field_char);
+            delimiter_.push_back(FIELD_CHAR);
             lasting_field_ = true;
             // In the next section, we will match the field placeholder character instead
-            c = field_char;
+            c = FIELD_CHAR;
         }
     }
     else {
@@ -110,8 +110,8 @@ void SchemaMatch::FeedChar(char c) {
     std::vector<MatchPoint> next_pointer_;
     for (const MatchPoint& mp : pointer_) {
         MatchPoint next_mp = FindAnchorDown(mp, nullptr);
-        if (FindNextMP(next_mp, field_char).start_pos != -1 && FindNextMP(next_mp, c).start_pos == -1) {
-            next_mp = FindNextMP(next_mp, field_char);
+        if (FindNextMP(next_mp, FIELD_CHAR).start_pos != -1 && FindNextMP(next_mp, c).start_pos == -1) {
+            next_mp = FindNextMP(next_mp, FIELD_CHAR);
             next_mp = FindAnchorUp(next_mp, nullptr);
             next_mp = FindAnchorDown(next_mp, nullptr);
         }
@@ -145,7 +145,7 @@ void CreateTuple(std::vector<std::unique_ptr<ParsedTuple>>* buffer_stack, std::v
     const Schema* schema, char delimiter, const std::string& buffer) {
     // First create a single string tuple and push it into the stack
     std::unique_ptr<ParsedTuple> new_tuple;
-    if (delimiter == field_char)
+    if (delimiter == FIELD_CHAR)
         new_tuple.reset(ParsedTuple::CreateField(buffer));
     else
         new_tuple.reset(ParsedTuple::CreateEmpty());
@@ -179,7 +179,7 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
 
     // Write unmatched parts to buffer
     for (int i = 0; i < earliest_match; ++i)
-        if (delimiter_[i] == field_char)
+        if (delimiter_[i] == FIELD_CHAR)
             buffer->append(buffer_[i]);
         else
             buffer->push_back(delimiter_[i]);
@@ -195,9 +195,9 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
         for (int j = 0; j < array_cnt; ++j)
             array_start.push_back(buffer_stack.size());
 
-        if (FindNextMP(mp, field_char).start_pos != -1 && FindNextMP(mp, delimiter_[i]).start_pos == -1) {
-            CreateTuple(&buffer_stack, &array_start, mp.schema, field_char, "");
-            mp = FindNextMP(mp, field_char);
+        if (FindNextMP(mp, FIELD_CHAR).start_pos != -1 && FindNextMP(mp, delimiter_[i]).start_pos == -1) {
+            CreateTuple(&buffer_stack, &array_start, mp.schema, FIELD_CHAR, "");
+            mp = FindNextMP(mp, FIELD_CHAR);
             --i;
         }
         else {
@@ -226,7 +226,7 @@ ParsedTuple* SchemaMatch::GetTuple(std::string* buffer) {
 std::string SchemaMatch::GetBuffer() {
     std::string ret = "";
     for (int i = 0; i < (int)delimiter_.size(); ++i)
-        if (delimiter_[i] == field_char)
+        if (delimiter_[i] == FIELD_CHAR)
             ret.append(buffer_[i]);
         else
             ret.push_back(delimiter_[i]);

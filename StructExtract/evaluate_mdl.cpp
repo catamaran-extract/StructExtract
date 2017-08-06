@@ -138,7 +138,7 @@ double EvaluateMDL::EvaluateTupleMDL(const std::vector<const ParsedTuple*>& tupl
     //Logger::GetLogger() << "Representative Tuple: " << ToString(tuples[0]) << "\n";
 
     if (schema->is_char) {
-        if (schema->delimiter != field_char) return 0;
+        if (schema->delimiter != FIELD_CHAR) return 0;
         std::vector<std::string> attr_vec;
         for (const ParsedTuple* tuple : tuples)
             attr_vec.push_back(tuple->value);

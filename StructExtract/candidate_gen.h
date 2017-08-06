@@ -23,7 +23,6 @@ private:
     const int FILE_SIZE;
     const int SAMPLE_LENGTH;
     const int SAMPLE_POINTS;
-    const static int SPAN_LIMIT = 10;
     const static int MOD_A = 999997, MOD_B = 1000003;
     const static int SPECIAL_CHAR_CARD_LIMIT = 20;
 
@@ -45,7 +44,6 @@ private:
     static void ExtractSchema(const Schema* schema, const std::vector<int>& cov,
         const std::map<int, double>& hash_coverage, std::map<int, CandidateSchema>* hash_schema);
 public:
-    const static int TOP_CANDIDATE_LIST_SIZE = 50;
     CandidateGen(const std::string& filename);
 
     void ComputeCandidate();

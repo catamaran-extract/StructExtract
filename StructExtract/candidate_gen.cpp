@@ -170,7 +170,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
                     }
                     else {
                         if (!lasting_field)
-                            striped_buffer.push_back(field_char);
+                            striped_buffer.push_back(FIELD_CHAR);
                         lasting_field = true;
                     }
                     if (potential_special_char[(unsigned char)raw_buffer[j]])
@@ -347,9 +347,9 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
     double rate = 0.005;
     while (1) {
         special_char->clear();
-        for (int i = 0; i < separator_char_size; ++i)
-            if (cnt[separator_char[i]] > rate * total_size)
-                special_char->push_back(separator_char[i]);
+        for (int i = 0; i < SEPARATOR_CHAR_SIZE; ++i)
+            if (cnt[SEPARATOR_CHAR[i]] > rate * total_size)
+                special_char->push_back(SEPARATOR_CHAR[i]);
         if (special_char->size() > 0 && special_char->size() <= SPECIAL_CHAR_CARD_LIMIT)
             break;
         else if (special_char->size() > SPECIAL_CHAR_CARD_LIMIT)

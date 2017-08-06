@@ -9,7 +9,7 @@
 bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
     std::vector<int>* start_pos, std::vector<int>* end_pos) {
     if (!vec[start + len]->is_char) return false;
-    if (vec[start + len]->delimiter == field_char) return false;
+    if (vec[start + len]->delimiter == FIELD_CHAR) return false;
 
     int non_field_cnt = 0;
     for (int i = start; i < start + len; ++i)
@@ -32,7 +32,7 @@ bool CheckArray(const std::vector<const Schema*>& vec, int start, int len,
             else if (len == 1 && next_start <= start + 2 && non_field_cnt == 0)
                 return false;
             else {
-                if (vec[next_start + len]->delimiter != field_char) return true;
+                if (vec[next_start + len]->delimiter != FIELD_CHAR) return true;
                 return true;
             }
         }
@@ -77,7 +77,7 @@ Schema* FoldBuffer(const std::string& buffer, std::vector<int>* cov) {
     for (char c : buffer) {
         std::unique_ptr<Schema> ptr(Schema::CreateChar(c));
         schema.push_back(std::move(ptr));
-        cov->push_back((c == field_char ? 0 : 1));
+        cov->push_back((c == FIELD_CHAR ? 0 : 1));
     }
 
     while (1) {
@@ -298,7 +298,7 @@ Schema* ExpandArray(const Schema* schema, int expand_size) {
 
 int NonFieldCount(const Schema* schema) {
     if (schema->is_char) {
-        if (schema->delimiter == field_char)
+        if (schema->delimiter == FIELD_CHAR)
             return 0;
         else
             return 1;
@@ -308,9 +308,9 @@ int NonFieldCount(const Schema* schema) {
         cnt += NonFieldCount(child.get());
     if (schema->is_array) {
         cnt *= 2;
-        if (schema->return_char != field_char)
+        if (schema->return_char != FIELD_CHAR)
             cnt += 2;
-        if (schema->terminate_char != field_char)
+        if (schema->terminate_char != FIELD_CHAR)
             ++cnt;
     }
     return cnt;

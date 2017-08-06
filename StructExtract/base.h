@@ -45,10 +45,13 @@ struct ParsedTuple {
     static ParsedTuple* CreateStruct(std::vector<std::unique_ptr<ParsedTuple>>* vec);
 };
 
-const char separator_char[] = { ',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','\\','#' };
-const int separator_char_size = sizeof(separator_char) / sizeof(char);
+const char SEPARATOR_CHAR[] = { ',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','\\','#' };
+const int SEPARATOR_CHAR_SIZE = sizeof(SEPARATOR_CHAR) / sizeof(char);
 
-const char field_char = 'F';
+const double COVERAGE_THRESHOLD = 0.1;
+const int TOP_CANDIDATE_LIST_SIZE = 50;
+const int SPAN_LIMIT = 10;
+const char FIELD_CHAR = 'F';
 
 int GetFileSize(const std::string& file);
 char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* block_len);

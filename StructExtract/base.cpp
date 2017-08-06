@@ -100,7 +100,7 @@ char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* blo
         strcpy(new_block, "\n");
         strcat(new_block, block);
         ++(*block_len);
-        delete block;
+        delete[] block;
         return new_block;
     }
     return block;

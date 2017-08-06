@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 #include <climits>
+#include <cmath>
 
 double CheckEnum(const std::vector<std::string>& attr_vec) {
     // Value to count mapping
