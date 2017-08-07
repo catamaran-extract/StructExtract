@@ -85,7 +85,7 @@ void CandidateGen::ExhaustiveSearch(const std::vector<char>& candidate_special_c
 
         for (int j = 0; j < special_char_cand_card; ++j)
             if ((i & (1 << j)) > 0) 
-                is_special_char[candidate_exclude_eol[j]] = true;
+                is_special_char[(unsigned char)candidate_exclude_eol[j]] = true;
 
         std::vector<CandidateSchema> schema_vec;
         EvaluateSpecialCharSet(is_special_char, candidate_special_char, &schema_vec);
@@ -227,7 +227,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
                             ++unmatched_special_char;
                     unmatched_size += buffer.size();
                 }
-                if (is_special_char[raw_buffer[j]])
+                if (is_special_char[(unsigned char)raw_buffer[j]])
                     ++special_char_size;
             }
             delete raw_buffer;

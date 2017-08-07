@@ -19,11 +19,11 @@ void NodeCandidateGen(const FunctionCallbackInfo<Value>& args) {
     CandidateGenerate(filename, &vec, &escaped);
     
     Local<Array> schema_list = Array::New(isolate); 
-    for (int i = 0; i < vec.size(); ++i)
+    for (int i = 0; i < (int)vec.size(); ++i)
         schema_list->Set(i, String::NewFromUtf8(isolate, vec[i].c_str()));
     
     Local<Array> escaped_list = Array::New(isolate);
-    for (int i = 0; i < escaped.size(); ++i)
+    for (int i = 0; i < (int)escaped.size(); ++i)
         escaped_list->Set(i, String::NewFromUtf8(isolate, escaped[i].c_str()));
 
     Local<Object> obj = Object::New(isolate);
@@ -41,7 +41,7 @@ void NodeSelectSchema(const FunctionCallbackInfo<Value>& args) {
     
     std::vector<std::string> schema_list;
     Handle<Array> param2 = Handle<Array>::Cast(args[1]);
-    for (int i = 0; i < param2->Length(); ++i) {
+    for (int i = 0; i < (int)param2->Length(); ++i) {
         v8::String::Utf8Value item(param2->Get(i)->ToString()); 
         std::string schema(*item);
         schema_list.push_back(schema);
@@ -72,9 +72,9 @@ void NodeExtractFromFile(const FunctionCallbackInfo<Value>& args) {
     ExtractFromFile(filename, schema, &table_vec);
 
     Local<Array> table = Array::New(isolate);
-    for (int i = 0; i < table_vec.size(); ++i) {
+    for (int i = 0; i < (int)table_vec.size(); ++i) {
         Local<Array> list = Array::New(isolate);
-        for (int j = 0; j < table_vec[i].size(); ++j)
+        for (int j = 0; j < (int)table_vec[i].size(); ++j)
             list->Set(j, String::NewFromUtf8(isolate, table_vec[i][j].c_str()));    
         table->Set(i, list);
     }

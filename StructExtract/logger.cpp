@@ -9,9 +9,8 @@ Logger& Logger::GetLogger() {
     return *self;
 }
 
-Logger::Logger() {
-    f_ = std::ofstream("log.txt");
-}
+Logger::Logger() :
+  f_("log.txt") {}
 
 std::string ToString(const Schema* schema) {
     if (schema == nullptr)
