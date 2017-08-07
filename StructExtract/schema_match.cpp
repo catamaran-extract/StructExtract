@@ -10,7 +10,7 @@ MatchPoint FindAnchorDown(const MatchPoint& mp, int* array_cnt) {
     MatchPoint next_mp(mp);
     // Go down
     while (!next_mp.schema->is_char) {
-        if (next_mp.pos == next_mp.schema->child.size())
+        if (next_mp.pos == (int)next_mp.schema->child.size())
             break;
         else {
             next_mp = MatchPoint(next_mp.schema->child[next_mp.pos].get(), 0, next_mp.start_pos);
@@ -24,7 +24,7 @@ MatchPoint FindAnchorDown(const MatchPoint& mp, int* array_cnt) {
 MatchPoint FindAnchorUp(const MatchPoint& mp, std::vector<int>* struct_size) {
     MatchPoint next_mp(mp);
     // Go up
-    while (next_mp.schema->is_struct && next_mp.schema->child.size() == next_mp.pos) {
+    while (next_mp.schema->is_struct && (int)next_mp.schema->child.size() == next_mp.pos) {
         if (struct_size != nullptr)
             struct_size->push_back(next_mp.schema->child.size());
         if (next_mp.schema->parent == nullptr)
@@ -63,7 +63,7 @@ SchemaMatch::SchemaMatch(const Schema* schema) :
 
     memset(is_special_char_, false, sizeof(is_special_char_));
     GenerateSpecialChar(schema);
-    is_special_char_[FIELD_CHAR] = false;
+    is_special_char_[(unsigned char)FIELD_CHAR] = false;
 }
 
 void SchemaMatch::GenerateSpecialChar(const Schema* schema) {

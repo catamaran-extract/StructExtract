@@ -171,7 +171,7 @@ double CheckFixedLength(const std::vector<std::string>& attr_vec) {
             fix_length = attr.length();
             fix_length_freq = std::vector<std::map<char, int>>(fix_length);
         }
-        if (fix_length == attr.length()) {
+        if (fix_length == (int)attr.length()) {
             for (int j = 0; j < (int)attr.length(); ++j)
                 ++fix_length_freq[j][attr[j]];
         }
