@@ -345,7 +345,7 @@ void CandidateGen::FilterSpecialChar(std::vector<char>* special_char) {
     }
 
     double rate = 0.005;
-    while (1) {
+    while (rate > 1e-5) {
         special_char->clear();
         for (int i = 0; i < SEPARATOR_CHAR_SIZE; ++i)
             if (cnt[SEPARATOR_CHAR[i]] > rate * total_size)

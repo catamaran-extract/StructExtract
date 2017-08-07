@@ -94,7 +94,7 @@ void CandidateGenerate(const std::string& filename, std::vector<std::string>* ve
 
 void SelectSchema(const std::string& filename, std::vector<std::string>& vec, std::string* schema, std::string* escaped) {
     double best_mdl = 1e10;
-    std::unique_ptr<Schema> best_schema;
+    std::unique_ptr<Schema> best_schema(nullptr);
     EvaluateMDL evaluate_mdl(filename); 
     
     for (int i = 0; i < (int)vec.size(); ++i) {

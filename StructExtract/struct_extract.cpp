@@ -45,6 +45,12 @@ int main(int argc, char** argv)
         std::cout << "Used Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << "\n";
         start = clock();
 
+        // Terminate if no schema is found
+        if (schema == nullptr) {
+            Logger::GetLogger() << "Terminate: No schema found.\n";
+            break;
+        }
+
         std::cout << "Extracting Records\n";
         // Extract
         std::string output_file = (output_prefix + "_" + std::to_string(++iteration) + ".tsv");

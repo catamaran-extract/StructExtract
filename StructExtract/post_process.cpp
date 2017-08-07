@@ -47,7 +47,7 @@ Schema* ShiftSchema(const Schema* schema, const std::string& file_name) {
 
 Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, const std::string& filename) {
     double best_mdl = 1e10;
-    std::unique_ptr<Schema> best_schema;
+    std::unique_ptr<Schema> best_schema(nullptr);
     for (int i = 0; i < std::min(candidate_gen->GetNumOfCandidate(), TOP_CANDIDATE_LIST_SIZE); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen->GetCandidate(i));
         std::unique_ptr<Schema> shifted_schema(ShiftSchema(schema.get(), filename));
