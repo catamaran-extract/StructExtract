@@ -59,7 +59,6 @@ Schema* SelectSchema(CandidateGen* candidate_gen, EvaluateMDL* evaluate_mdl, con
         Logger::GetLogger() << "MDL: " << std::to_string(evaluated_mdl) << "\n";
 
         if (evaluated_mdl < best_mdl) {
-            std::cout << "Updated Best Schema on Pos #" << i + 1 << "\n";
             best_mdl = evaluated_mdl;
             best_schema = std::move(shifted_schema);
         }

@@ -15,7 +15,7 @@
 int main(int argc, char** argv)
 {
     if (argc != 3) {
-        std::cerr << "Usage: StructExtract <input file> <output_file>\n";
+        std::cerr << "Usage: Datamaran <input file> <output_file>\n";
         std::cerr << "Note: The output file names will be <output_file>_?.tsv\n";
         return 1;
     }

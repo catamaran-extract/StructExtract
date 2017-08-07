@@ -70,6 +70,8 @@ Schema* Deserialize(const std::string& str, int* pos) {
         *pos += 1;
         return Schema::CreateStruct(&vec);
     }
+    std::cerr << "Deserialize Error\n";
+    return nullptr;
 }
 
 inline Schema* Deserialize(const std::string& str) {
@@ -83,7 +85,7 @@ void CandidateGenerate(const std::string& filename, std::vector<std::string>* ve
     
     vec->clear();
     escaped->clear();
-    for (int i = 0; i < std::min(candidate_gen.GetNumOfCandidate(), CandidateGen::TOP_CANDIDATE_LIST_SIZE); ++i) {
+    for (int i = 0; i < std::min(candidate_gen.GetNumOfCandidate(), TOP_CANDIDATE_LIST_SIZE); ++i) {
         std::unique_ptr<Schema> schema(candidate_gen.GetCandidate(i));
         vec->push_back(Serialize(schema.get()));
         escaped->push_back(ToString(schema.get()));
@@ -95,7 +97,7 @@ void SelectSchema(const std::string& filename, std::vector<std::string>& vec, st
     std::unique_ptr<Schema> best_schema;
     EvaluateMDL evaluate_mdl(filename); 
     
-    for (int i = 0; i < vec.size(); ++i) {
+    for (int i = 0; i < (int)vec.size(); ++i) {
         std::unique_ptr<Schema> schema(Deserialize(vec[i]));
         std::unique_ptr<Schema> shifted_schema(ShiftSchema(schema.get(), filename));    
         

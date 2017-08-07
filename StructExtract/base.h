@@ -6,8 +6,6 @@
 #include <vector>
 
 struct Schema {
-    const Schema* parent;
-    int index;
 
     bool is_array;
     char return_char, terminate_char;
@@ -17,10 +15,12 @@ struct Schema {
 
     bool is_struct;
 
+    const Schema* parent;
     std::vector<std::unique_ptr<Schema>> child;
+    int index;
 
 private:
-    Schema() : is_char(false), is_array(false), is_struct(false), parent(nullptr), index(-1) {}
+    Schema() : is_array(false), is_char(false), is_struct(false), parent(nullptr), index(-1) {}
 
 public:
     static Schema* CreateChar(char delimiter);
