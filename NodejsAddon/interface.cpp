@@ -70,7 +70,7 @@ Schema* Deserialize(const std::string& str, int* pos) {
         *pos += 1;
         return Schema::CreateStruct(&vec);
     }
-    std::cerr << "Deserialize Error\n";
+    std::cerr << "Deserialize Error:\n" << str << "\n";
     return nullptr;
 }
 
