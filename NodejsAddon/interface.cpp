@@ -50,10 +50,9 @@ Schema* Deserialize(const std::string& str, int* pos) {
     if (str[*pos] == '1') {
         *pos += 2;
         std::vector<std::unique_ptr<Schema>> vec;
-        while (1) {
+        while (str[*pos]!='}') {
             std::unique_ptr<Schema> ptr(Deserialize(str, pos));
             vec.push_back(std::move(ptr));
-            if (str[*pos]=='}') break;
         }
         char return_char = str[*pos + 2], terminate_char = str[*pos + 5];
         *pos += 7;
@@ -62,10 +61,9 @@ Schema* Deserialize(const std::string& str, int* pos) {
     if (str[*pos] == '2') {
         *pos += 2;
         std::vector<std::unique_ptr<Schema>> vec;
-        while (1) {
+        while (str[*pos]!='}') {
             std::unique_ptr<Schema> ptr(Deserialize(str, pos));
             vec.push_back(std::move(ptr));
-            if (str[*pos]=='}') break;
         }
         *pos += 1;
         return Schema::CreateStruct(&vec);
