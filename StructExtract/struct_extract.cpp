@@ -14,8 +14,8 @@
 
 int main(int argc, char** argv)
 {
-    if (argc != 3) {
-        std::cerr << "Usage: Datamaran <input file> <output_file>\n";
+    if (argc < 3) {
+        std::cerr << "Usage: Datamaran <input file> <output_file> [-e]\n";
         std::cerr << "Note: The output file names will be <output_file>_?.tsv\n";
         return 1;
     }
@@ -24,14 +24,17 @@ int main(int argc, char** argv)
     std::string input_file(argv[1]);
     std::string output_prefix(argv[2]);
     std::string buffer_prefix("temp");
-    clock_t start = clock();
+    bool greedy = true;
+    if (argc == 4 && strcmp(argv[3], "-e") == 0)
+        greedy = false;
 
+    clock_t start = clock();
     bool finished_extracting = false;
     int iteration = 0, file_size = -1;
     while (!finished_extracting) {
         std::cout << "Computing Candidates\n";
         CandidateGen candidate_gen(input_file);
-        candidate_gen.ComputeCandidate();
+        candidate_gen.ComputeCandidate(greedy);
 
         std::cout << "Used Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << "\n";
         start = clock();

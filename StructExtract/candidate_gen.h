@@ -46,7 +46,7 @@ private:
 public:
     CandidateGen(const std::string& filename);
 
-    void ComputeCandidate();
+    void ComputeCandidate(bool greedy);
     int GetNumOfCandidate() const { return candidate_schema_.size(); }
     Schema* GetCandidate(int index) { return candidate_schema_[index].schema.release(); }
 };

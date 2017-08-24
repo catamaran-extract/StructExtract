@@ -113,15 +113,17 @@ void CandidateGen::ExhaustiveSearch(const std::vector<char>& candidate_special_c
     }
 }
 
-void CandidateGen::ComputeCandidate() {
+void CandidateGen::ComputeCandidate(bool greedy) {
     candidate_schema_.clear();
 
     std::vector<char> candidate_special_char;
     FilterSpecialChar(&candidate_special_char);
     Logger::GetLogger() << "Special Char Cardinality: " << candidate_special_char.size() << "\n";
 
-    //GreedySearch(candidate_special_char);
-    ExhaustiveSearch(candidate_special_char);
+    if (greedy)
+        GreedySearch(candidate_special_char);
+    else
+        ExhaustiveSearch(candidate_special_char);
 
     sort(candidate_schema_.begin(), candidate_schema_.end());
     std::cout << "Schema list Size: " << candidate_schema_.size() << "\n";
