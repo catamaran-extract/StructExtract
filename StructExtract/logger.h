@@ -4,7 +4,7 @@
 #include <fstream>
 #include "base.h"
 
-#define LOGGER_SWITCH false
+#define LOGGER_SWITCH true
 
 class Logger {
 private:

@@ -207,7 +207,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
         }
 
     for (auto& candidate : *schema_vec) {
-        for (int i = 0; i < SAMPLE_POINTS / 2; ++i) {
+        for (int i = 0; i < std::max(SAMPLE_POINTS / 2, 1); ++i) {
             char* raw_buffer; int buffer_len;
             raw_buffer = SampleBlock(&f_, FILE_SIZE, sample_point[i], SAMPLE_LENGTH, &buffer_len);
 
@@ -233,6 +233,7 @@ void CandidateGen::EvaluateSpecialCharSet(bool is_special_char[256], const std::
                     ++special_char_size;
             }
             delete raw_buffer;
+
             candidate.coverage += (buffer_len - unmatched_size) / (double)(buffer_len) / SAMPLE_POINTS * 2;
             candidate.all_char_coverage += (special_char_size - unmatched_special_char) / (double)(buffer_len) / SAMPLE_POINTS * 2;
         }
@@ -249,7 +250,7 @@ void CandidateGen::EstimateHashCoverage(const std::string& buffer,
 
 void CandidateGen::ExtractCandidate(const std::string& buffer, const std::map<int, double>& hash_coverage,
     std::map<int, CandidateSchema>* hash_schema) {
-    // In this function, we estimate extract schemas from buffer
+    // In this function, we extract schemas from buffer
     std::vector<int> cov;
     std::unique_ptr<Schema> schema_ptr(FoldBuffer(buffer, &cov));
     ExtractSchema(schema_ptr.get(), cov, hash_coverage, hash_schema);

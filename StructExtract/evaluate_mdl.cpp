@@ -79,7 +79,7 @@ int EvaluateMDL::FindMaxSize(const std::vector<const ParsedTuple*>& tuples) {
 }
 
 double EvaluateMDL::RestructureMDL(const std::vector<const ParsedTuple*>& tuples, const Schema* schema, int* expand_size) {
-    //Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
+    Logger::GetLogger() << "Restructuring Schema: " << ToString(schema) << "\n";
     // In this function, we attempt to restructure the schema to see if it is better
     double mdl = 1e20;
     int m_size = FindMaxSize(tuples);
@@ -105,7 +105,7 @@ double EvaluateMDL::RestructureMDL(const std::vector<const ParsedTuple*>& tuples
                 array_tuple_vec.push_back(tuple->attr[j].get());
         double array_mdl = EvaluateArrayTupleMDL(array_tuple_vec, schema);
         //Logger::GetLogger() << "Array: " << array_mdl << ", Struct: " << partial_struct_mdl << ", Trivial: " << trivial_mdl << "\n";
-        if (array_mdl + partial_struct_mdl + trivial_mdl < mdl) {
+        if (array_mdl + partial_struct_mdl + trivial_mdl <= mdl + 1) { // In case of equal mdl, we prefer expanding
             mdl = array_mdl + partial_struct_mdl + trivial_mdl;
             *expand_size = i;
         }
