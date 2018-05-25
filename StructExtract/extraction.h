@@ -6,6 +6,7 @@
 #include <fstream>
 #include <vector>
 
+// This class implements the actual extraction step
 class Extraction {
 private:
     std::unique_ptr<std::istream> fin_;

@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 
+// This class implements the MDL evaluation (the second phase of the evaluation step)
 class EvaluateMDL {
 private:
     const int FILE_SIZE;

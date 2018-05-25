@@ -2,6 +2,7 @@
 
 #include "base.h"
 
+// Some utility functions for MDL evaluation
 double CheckEnum(const std::vector<std::string>& attr_vec);
 double CheckInt(const std::vector<std::string>& attr_vec);
 double CheckDouble(const std::vector<std::string>& attr_vec);

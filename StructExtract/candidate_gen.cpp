@@ -11,8 +11,6 @@
 #include <algorithm>
 #include <set>
 
-const double CandidateGen::COVERAGE_THRESHOLD = 0.05;
-
 CandidateGen::CandidateGen(const std::string& filename) :
     FILE_SIZE(GetFileSize(filename)),
     SAMPLE_LENGTH(4000),

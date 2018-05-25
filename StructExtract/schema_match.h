@@ -14,6 +14,7 @@ struct MatchPoint {
         schema(schema_), pos(pos_), start_pos(start_pos_) {}
 };
 
+// SchemaMatch implements the LL(1) parser for structure templates
 class SchemaMatch {
 private:
     // buffer stores all matched non-special characters
