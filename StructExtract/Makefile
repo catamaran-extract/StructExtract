@@ -28,8 +28,8 @@ schema_utility.o: schema_utility.cpp schema_utility.h schema_match.h logger.h
 structure_output.o: structure_output.cpp structure_output.h logger.h
 	g++ -c structure_output.cpp -std=c++11
 
-datamaran: struct_extract.cpp base.o candidate_gen.o evaluate_mdl.o extraction.o logger.o mdl_utility.o post_process.o schema_match.o schema_utility.o structure_output.o
-	g++ -o datamaran struct_extract.cpp base.o candidate_gen.o evaluate_mdl.o extraction.o logger.o mdl_utility.o post_process.o schema_match.o schema_utility.o structure_output.o -std=c++11 -O3
+catamaran: struct_extract.cpp base.o candidate_gen.o evaluate_mdl.o extraction.o logger.o mdl_utility.o post_process.o schema_match.o schema_utility.o structure_output.o
+	g++ -o catamaran struct_extract.cpp base.o candidate_gen.o evaluate_mdl.o extraction.o logger.o mdl_utility.o post_process.o schema_match.o schema_utility.o structure_output.o -std=c++11 -O3
 
 clear:
 	rm *.o

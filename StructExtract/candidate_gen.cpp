@@ -13,7 +13,6 @@
 
 CandidateGen::CandidateGen(const std::string& filename) :
     FILE_SIZE(GetFileSize(filename)),
-    SAMPLE_LENGTH(4000),
     SAMPLE_POINTS(std::min(std::max(1, FILE_SIZE / SAMPLE_LENGTH), 10)) {
     f_.open(filename, std::ios::binary);
 }
@@ -23,6 +22,7 @@ void CandidateGen::GreedySearch(const std::vector<char>& candidate_special_char)
     bool is_special_char[256];
     memset(is_special_char, false, sizeof(is_special_char));
     is_special_char[(unsigned char)'\n'] = true;
+
 
     while (1) {
         char next_special_char = -1;

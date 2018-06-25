@@ -64,17 +64,27 @@ struct ParsedTuple {
 };
 
 // The range (superset) of RT-CharSet
-const char SEPARATOR_CHAR[] = { ',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','\\','#' };
-const int SEPARATOR_CHAR_SIZE = sizeof(SEPARATOR_CHAR) / sizeof(char);
+const char          SEPARATOR_CHAR[]     = { ',',';',' ','\t','|','-','<','>','.','"','\'','[',']','(',')','<','>',':','/','\\','#' };
+const int           SEPARATOR_CHAR_SIZE   = sizeof(SEPARATOR_CHAR) / sizeof(char);
 
 // Coverage Threshold
-const double COVERAGE_THRESHOLD = 0.05;
+const double        COVERAGE_THRESHOLD      = 0.05; 
 // The number of remaining structure templates after the first phase of evaluation step
-const int TOP_CANDIDATE_LIST_SIZE = 50;
+const int           TOP_CANDIDATE_LIST_SIZE = 50; // 50 to 5
 // The maximum span of each record
-const int SPAN_LIMIT = 10;
-const char FIELD_CHAR = 'F';
+const int           SPAN_LIMIT              = 10; // 10 to 5
+const char          FIELD_CHAR              = 'F';
+
+// Factored out from candidate_gen
+const static int    SPECIAL_CHAR_CARD_LIMIT = 20; // 20
+const static int    SAMPLE_LENGTH           = 2000; // 4000
+
+
+const static int    MOD_A                   = 999997;
+const static int    MOD_B                   = 1000003;
+
+
 
 // Utility Functions
-int GetFileSize(const std::string& file);
-char* SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* block_len);
+int     GetFileSize(const std::string& file);
+char*   SampleBlock(std::ifstream* fin, int file_size, int pos, int span, int* block_len);

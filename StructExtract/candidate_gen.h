@@ -25,10 +25,7 @@ bool operator<(const CandidateSchema& a, const CandidateSchema& b);
 class CandidateGen {
 private:
     const int FILE_SIZE;
-    const int SAMPLE_LENGTH;
     const int SAMPLE_POINTS;
-    const static int MOD_A = 999997, MOD_B = 1000003;
-    const static int SPECIAL_CHAR_CARD_LIMIT = 20;
 
     std::ifstream f_;
 
@@ -52,7 +49,7 @@ private:
 public:
     CandidateGen(const std::string& filename);
 
-    void ComputeCandidate(bool greedy);
-    int GetNumOfCandidate() const { return candidate_schema_.size(); }
+    void    ComputeCandidate(bool greedy);
+    int     GetNumOfCandidate() const { return candidate_schema_.size(); }
     Schema* GetCandidate(int index) { return candidate_schema_[index].schema.release(); }
 };
